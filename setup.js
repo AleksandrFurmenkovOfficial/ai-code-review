@@ -3,7 +3,7 @@ const path = require("path");
 
 try {
   console.log("Running npm install...");
-  let args = ["install", "--prefix", path.resolve(__dirname)];
+  let args = ["install", "--prefix", path.resolve(__dirname)]; // test
   execFileSync("npm", args);
   console.log("Dependencies installed successfully.");
 } catch (error) {
