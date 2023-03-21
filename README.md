@@ -1,10 +1,6 @@
 # AI Code Review
 
-Perform code review using OpenAI ChatGPT on your GitHub repositories.
-
-## Name
-
-AI Code Review
+Perform a code review on your pull requests using OpenAI ChatGPT
 
 ## Description
 
