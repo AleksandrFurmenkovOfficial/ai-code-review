@@ -1,11 +1,10 @@
-const { execSync } = require("child_process");
+const { execFileSync } = require("child_process");
 const path = require("path");
-
-const actionDir = path.resolve(__dirname);
 
 try {
   console.log("Running npm install...");
-  execSync(`npm install --prefix ${actionDir}`, { stdio: "inherit" });
+  let args = ["install", "--prefix", path.resolve(__dirname)];
+  execFileSync("npm", args);
   console.log("Dependencies installed successfully.");
 } catch (error) {
   console.error("Error installing dependencies:", error);
