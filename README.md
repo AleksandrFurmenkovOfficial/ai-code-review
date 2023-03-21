@@ -1,6 +1,6 @@
 # AI Code Review
 
-Perform a code review on your pull requests using OpenAI ChatGPT
+Perform a code review on your pull requests using OpenAI ChatGPT.
 
 ## Description
 
@@ -51,5 +51,6 @@ jobs:
 ```
 
 This action will run on every opened or updated pull request, and it will review only the specified file types and exclude the specified paths.
+A comment from AI will be added to the PR.
 
 PS ***Written with GPT 3.5 turbo***
