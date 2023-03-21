@@ -1,0 +1,30 @@
+name: 'AI Code Review'
+description: 'Perform code review using OpenAI ChatGPT'
+
+inputs:
+  token:
+    description: 'GitHub token'
+    required: true
+  openai_api_key:
+    description: 'OpenAI API key'
+    required: true
+  owner:
+    description: 'Repository owner'
+    required: true
+  repo:
+    description: 'Repository name'
+    required: true
+  pr_number:
+    description: 'Pull request number'
+    required: true
+  file_extensions:
+    description: 'File extensions to review (comma-separated, e.g., ".py,.js,.html")'
+    required: false
+  exclude_paths:
+    description: 'Paths to exclude from review (comma-separated, e.g., "test/,docs/")'
+    required: false
+
+runs:
+  using: 'node16'
+  pre: 'setup.js'
+  main: 'index.js'

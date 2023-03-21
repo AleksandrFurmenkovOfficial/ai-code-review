@@ -1,0 +1,19 @@
+name: PR review
+
+on: 
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  annotate-pr:
+    runs-on: ubuntu-latest
+    name: Add AI comment with review for changes
+    steps:
+      - name: AI review
+        uses: AleksandrFurmenkovOfficial/ai-code-review@main
+        with:
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
+          pr_number: ${{ github.event.number }}
+          token: ${{ secrets.GITTOKEN }}
+          openai_api_key: ${{ secrets.OPENAIAPIKEY }}

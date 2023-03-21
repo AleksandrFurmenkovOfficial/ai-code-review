@@ -1,0 +1,28 @@
+{
+  "name": "ai-code-review",
+  "version": "0.1.1",
+  "description": "Perform code review using OpenAI ChatGPT on your GitHub repositories.",
+  "main": "index.js",
+  "scripts": {
+    "build": "npm build index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AleksandrFurmenkovOfficial/ai-code-review.git"
+  },
+  "keywords": [],
+  "author": "Aleksandr Furmenkov",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/AleksandrFurmenkovOfficial/ai-code-review/issues"
+  },
+  "homepage": "https://github.com/AleksandrFurmenkovOfficial/ai-code-review#readme",
+  "dependencies": {
+    "@actions/core": "^1.10.0",
+    "@actions/github": "^5.1.1",
+    "openai": "^3.2.1"
+  },
+  "devDependencies": {
+    "@vercel/ncc": "^0.36.1"
+  }
+}
