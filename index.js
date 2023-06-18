@@ -1,201 +1,108 @@
-const github = require("@actions/github");
 const core = require("@actions/core");
-const openai = require("openai");
+const GitHubAPI = require("./githubapi");
+const OpenAIAPI = require("./openaiapi");
 
-const getFilteredChangedFiles = (changedFiles, file_extensions, exclude_paths) => {
+const isFileToReview = (filename, fileExtensions, excludePaths) => {
+    if (fileExtensions) {
+        const extensions = fileExtensions.split(",").map((ext) => ext.trim());
+        if (!extensions.some((ext) => filename.endsWith(ext))) {
+            return false;
+        }
+    }
+
+    if (excludePaths) {
+        const paths = excludePaths.split(",").map((path) => path.trim());
+        if (paths.some((path) => filename.startsWith(path))) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+const getFilteredChangedFiles = (changedFiles, fileExtensions, excludePaths) => {
     let filteredFiles = changedFiles;
-
-    if (file_extensions) {
-        const extensions = file_extensions.split(',').map((ext) => ext.trim());
-        filteredFiles = filteredFiles.filter((file) =>
-            extensions.some((ext) => file.filename.endsWith(ext))
-        );
-    }
-
-    if (exclude_paths) {
-        const paths = exclude_paths.split(',').map((path) => path.trim());
-        filteredFiles = filteredFiles.filter((file) =>
-            !paths.some((path) => file.filename.startsWith(path))
-        );
-    }
-
-    return filteredFiles;
+    return filteredFiles.filter((file) => isFileToReview(file.filename, fileExtensions, excludePaths));
 };
 
-const getFileChanges = async (fileContent, octokit, owner, repo, filename, branchName, baseBranchName, around = 42) => {
-    const { data: diff } = await octokit.rest.repos.compareCommits({
-        owner,
-        repo,
-        base: baseBranchName,
-        head: branchName,
-    });
+const getApproxMaxSymbols = () => {
+    const maxTokens = 8192;
+    const maxSymbols = maxTokens * 4;
+    const oneFifthInSymbols = maxSymbols / 5;
+    const maxInputSymbols = oneFifthInSymbols * 4;
+    return maxInputSymbols;
+}
 
-    const fileDiff = diff.files.find((f) => f.filename === filename);
-    if (!fileDiff) return "";
+const getAIModelName = () => "gpt-4-0613"; // gpt-4-32k-0613
 
-    const getChangedLineNumbers = (fileDiff) => {
-        const diffLines = fileDiff.patch.split('\n');
-        const changedLineNumbers = [];
-
-        let currentLine = 0;
-        for (const line of diffLines) {
-            if (line.startsWith('@@')) {
-                const match = line.match(/@@ -\d+(,\d+)? \+(\d+)(,\d+)? @@/);
-                if (match) {
-                    currentLine = parseInt(match[2], 10) - 1;
-                }
-            } else if (line.startsWith('+')) {
-                changedLineNumbers.push(currentLine);
-                currentLine++;
-            } else if (!line.startsWith('-')) {
-                currentLine++;
-            }
+const processAllInOneStrategy = async (filteredChangedFiles, openaiAPI, githubAPI, owner, repo, pullNumber) => {
+    let contentToReview = Object.values(filteredChangedFiles).reduce(
+        (accumulator, file) => `${accumulator}${openaiAPI.wrapFileContent(file.filename, file.patch)}`,
+        ""
+    );
+    if (contentToReview.length <= getApproxMaxSymbols()) {
+        const commonComment = await openaiAPI.doReview(getAIModelName(), contentToReview);
+        if (commonComment)
+        {
+          console.debug(commonComment);
+          await githubAPI.createPRComment(owner, repo, pullNumber, commonComment);
+          return true;
         }
+    }
 
-        return changedLineNumbers;
-    };
+    return false;
+}
 
-    let changedLineNumbers = getChangedLineNumbers(fileDiff);
-    const contentLines = fileContent.split('\n');
-    const relevantLines = [];
-    for (const lineNumber of changedLineNumbers) {
-        const startLine = Math.max(lineNumber - around, 0);
-        const endLine = Math.min(lineNumber + around, contentLines.length);
-
-        for (let i = startLine; i < endLine; i++) {
-            if (i === startLine && i !== 0)
-            {
-                relevantLines.push("...");
-            }
-
-            if (!relevantLines.includes(contentLines[i])) {
-                relevantLines.push(contentLines[i]);
-            }
-
-            if (i === endLine - 1 && i !== contentLines.length - 1)
-            {
-                relevantLines.push("...");
-            }
+const processDiffByDiffStrategy = async (filteredChangedFiles, openaiAPI) => {
+    for (const file of filteredChangedFiles) {
+        let contentToReview = `${openaiAPI.wrapFileContent(file.filename, file.patch)}`;
+        if (contentToReview.length <= getApproxMaxSymbols()) {
+            await openaiAPI.doReview(getAIModelName(), contentToReview);
+        } else {
+            console.info(`File patch ${file.filename} is too large to process.`);
+            continue;
         }
     }
     
-    return `File: ${filename}\n\n${relevantLines.join('\n')}\n\n`;
-};
-
-const getSimplifiedContent = async (filesWithContents, octokit, owner, repo, max_input, branchName, baseBranchName) => {
-    let combinedFileContent = "";
-    for (const filename in filesWithContents) {
-        let content = filesWithContents[filename];
-        const fileChanges = await getFileChanges(content, octokit, owner, repo, filename, branchName, baseBranchName);
-        if ((combinedFileContent + fileChanges).length > max_input) {
-            const fileChanges = await getFileChanges(content, octokit, owner, repo, filename, branchName, baseBranchName, 21);
-            if ((combinedFileContent + fileChanges).length > max_input) {
-                const fileChanges = await getFileChanges(content, octokit, owner, repo, filename, branchName, baseBranchName, 0);
-                combinedFileContent += fileChanges;
-            }
-            else {
-                combinedFileContent += fileChanges;
-            }
-        }
-        else {
-            combinedFileContent += fileChanges;
-        }
-    }
-    return combinedFileContent;
-};
-
-const getFilesContent = async (filteredChangedFiles, octokit, owner, repo, branchName) => {
-    let filesWithContents = {}
-    for (const file of filteredChangedFiles) {
-        const { data: fileContent } = await octokit.rest.repos.getContent({
-            owner,
-            repo,
-            path: file.filename,
-            ref: branchName,
-        });
-
-        const decodedContent = Buffer.from(fileContent.content, 'base64').toString('utf-8');
-        filesWithContents[file.filename] = decodedContent;
-    }
-    return filesWithContents;
-};
+    return true;
+}
 
 const main = async () => {
     try {
-        const token = core.getInput('token', { required: true });
-        const repo = core.getInput('repo', { required: true });
-        const pr_number = core.getInput('pr_number', { required: true });        
-        const owner = core.getInput('owner', { required: true });
+        const repo = core.getInput("repo", { required: true });
+        const owner = core.getInput("owner", { required: true });
+        const pullNumber = core.getInput("pr_number", { required: true });
 
-        const file_extensions = core.getInput('file_extensions', { required: false });
-        const exclude_paths = core.getInput('exclude_paths', { required: false });
-        const octokit = new github.getOctokit(token);
+        const githubToken = core.getInput("token", { required: true });
+        const githubAPI = new GitHubAPI(githubToken);
+        const pullRequestData = await githubAPI.getPullRequest(owner, repo, pullNumber);
+        const filesContentGetter = (filePath) => githubAPI.getContent(owner, repo, filePath, pullRequestData.head.sha);
+        const inFileCommenter = (comment, filePath, line) => githubAPI.createReviewComment(owner, repo, pullNumber, pullRequestData.head.sha, comment, filePath, line);
+        const openaiApiKey = core.getInput("openai_api_key", { required: true });
+        const openaiAPI = new OpenAIAPI(openaiApiKey, filesContentGetter, inFileCommenter, getApproxMaxSymbols());
 
-        const { data: prData } = await octokit.rest.pulls.get({
-            owner,
-            repo,
-            pull_number: pr_number,
-        });
-        
-        const branchName = prData.head.ref;
-        const baseBranchName = prData.base.ref;
-
-        const max_tokens = 4096;
-        const max_symbols = max_tokens * 4;
-        const one_fifth_in_symbols = (max_symbols / 5);
-        const max_input_symbols = one_fifth_in_symbols * 4;
-        const { data: changedFiles } = await octokit.rest.pulls.listFiles({
-            owner,
-            repo,
-            pull_number: pr_number,
-        });
-        const filteredChangedFiles = getFilteredChangedFiles(changedFiles, file_extensions, exclude_paths);
-        const filesWithContents = await getFilesContent(filteredChangedFiles, octokit, owner, repo, branchName);
-        combinedFileContent = Object.values(filesWithContents).reduce((accumulator, currentContent) => {
-            return accumulator + currentContent;
-          }, "");
-        
-        if (combinedFileContent.length > max_input_symbols) {
-            combinedFileContent = await getSimplifiedContent(filesWithContents, octokit, owner, repo, max_input_symbols, branchName, baseBranchName);
-        }
-
-        if (combinedFileContent.length > max_input_symbols) {
-            // todo: file change by change mode
-        }
-
-        const GPT35TurboMessage = [
-            { role: "system", content: "You are a senior developer who responsible for code-review. You should check a code in files that will specified further. You should find mistakes, typos and check logic. If all is ok then write 'All looks good.'" },
-            {
-                role: "user",
-                content: combinedFileContent,
-            }
-        ];
-
-        const openai_api_key = core.getInput('openai_api_key', { required: true });
-        const openai_client = new openai.OpenAIApi(
-            new openai.Configuration({ apiKey: openai_api_key })
+        const changedFiles = await githubAPI.listFiles(owner, repo, pullNumber);
+        const fileExtensions = core.getInput("file_extensions", { required: false });
+        const excludePaths = core.getInput("exclude_paths", { required: false });
+        const filteredChangedFiles = getFilteredChangedFiles(
+            changedFiles,
+            fileExtensions,
+            excludePaths
         );
+       
+        const allInOneSucess = await processAllInOneStrategy(filteredChangedFiles, openaiAPI, githubAPI, owner, repo, pullNumber);
+        if (allInOneSucess)
+            return;
 
-        let GPT35Turbo = async (message) => {
-            const response = await openai_client.createChatCompletion({
-                model: "gpt-3.5-turbo",
-                messages: message,
-            });
+        const diffByDiffSucess = await processDiffByDiffStrategy(filteredChangedFiles, openaiAPI);
+        if (diffByDiffSucess)
+            return;
 
-            return response.data.choices[0].message.content;
-        };
-
-        var comment = await GPT35Turbo(GPT35TurboMessage);
-        await octokit.rest.issues.createComment({
-            owner,
-            repo,
-            issue_number: pr_number,
-            body: comment
-        });
-
+        console.error("Have no strategy to process such a big PR.");
     } catch (error) {
+        console.error(error);
         core.setFailed(error.message);
     }
-}
+};
 
 main();
