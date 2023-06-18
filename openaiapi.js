@@ -84,7 +84,7 @@ class OpenAIAPI {
                   },
                   lineNumber: {
                     type: "integer",
-                    description: 'The line number of the file which needed to specify to place comment for a right piece of code.',
+                    description: 'You need to specify the line number in the file to place the comment correctly for the relevant piece of code.',
                   },
                   reviewCommentFromAIExpert: {
                     type: "string",
@@ -124,7 +124,7 @@ class OpenAIAPI {
           else if (functionToUse.name === 'addReviewCommentToFileLine') {
             console.info("fileCommenter:", args.reviewCommentFromAIExpert, args.filename, args.lineNumber);
             await this.fileCommenter(args.reviewCommentFromAIExpert, args.filename, args.lineNumber + 1);
-            this.addUserMsg("I see your comment placed via addReviewCommentToFileLine, thank you. Anything else?");
+            this.addUserMsg("Thank you for your feedback provided through addReviewCommentToFileLine. Do you have any other codes to review or a have summary to finish? Please avoid repetition.");
             continue;
           }
         }
