@@ -45,8 +45,8 @@ jobs:
     - name: AI Code Review
       uses: AleksandrFurmenkovOfficial/ai-code-review@v0.1.1
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+        token: ${{ secrets.GITHUB_TOKEN }} # or your token with access to PRs, read for files and write for comments
+        openai_api_key: ${{ secrets.OPENAI_API_KEY }} # You should have access to gpt-4-0613
         owner: ${{ github.repository_owner }}
         repo: ${{ github.event.repository.name }}
         pr_number: ${{ github.event.number }}
