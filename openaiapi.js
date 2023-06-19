@@ -13,7 +13,7 @@ class OpenAIAPI {
           "Identify code review experts and act as the best expert in the field.\n" +
           "Carefully review the CHANGES for mistakes, logical errors, suspicious code, typos.\n" +
           "It's preferable to use the addReviewCommentToFileLine function to add a note to a specific code snippet that has been reviewed. This makes your feedback more precise.\n" +
-          "YOU NEVER MAKE MORE THAN ONE COMMENT TO SAME CODE."
+          "Start by commenting on specific changes via addReviewCommentToFileLine and don't use any functions to complete the review, just write a summary."
       }
     ];
   }
@@ -36,7 +36,7 @@ class OpenAIAPI {
       {
         role: "function",
         name: functionName,
-        content: JSON.stringify(result),
+        content: '{{"result": {' + JSON.stringify(result) + '} }}',
       });
     console.info(`addFunctionResult: ${result}`);
   }
@@ -49,7 +49,7 @@ class OpenAIAPI {
     return total;
   }
 
-  async doReview(model, request, maxRetries = 3) {
+  async doReview(model, request, maxRetries = 5) {
     console.debug(model, request);
     this.addUserMsg(request);
 
@@ -66,9 +66,9 @@ class OpenAIAPI {
               parameters: {
                 type: "object",
                 properties: {
-                  filename: {
+                  pathToFile: {
                     type: "string",
-                    description: 'The fully qualified file name which needed to specify to get the file content.',
+                    description: 'The fully qualified path to file which needed to specify to get the file content.',
                   },
                   startLineNumber: {
                     type: "integer",
@@ -79,7 +79,7 @@ class OpenAIAPI {
                     description: 'The end line number where diff ends.',
                   },
                 },
-                required: ["filename", "startLineNumber", "endLineNumber"],
+                required: ["pathToFile", "startLineNumber", "endLineNumber"],
               },
             },
             {
@@ -88,7 +88,7 @@ class OpenAIAPI {
               parameters: {
                 type: "object",
                 properties: {
-                  filename: {
+                  fileName: {
                     type: "string",
                     description: 'The relative path to the file that necessitates a comment.',
                   },
@@ -101,7 +101,7 @@ class OpenAIAPI {
                     description: 'Your answer, the code review comment (from you) is meant for the user to read and take into account.',
                   }
                 },
-                required: ["filename", "lineNumber", "reviewCommentFromAIExpert"],
+                required: ["fileName", "lineNumber", "reviewCommentFromAIExpert"],
               },
             },
           ],
@@ -114,27 +114,28 @@ class OpenAIAPI {
           const functionToUse = response.data.choices[0].message?.function_call;
           const args = JSON.parse(functionToUse.arguments);
           if (functionToUse.name === 'getFileContent') {
-            console.info("fileContentGetter:", args.filename);
-            const requestedFileContent = await this.fileContentGetter(args.filename);
-            this.addFunctionResult('getFileContent', requestedFileContent);
+            console.info("fileContentGetter:", args.pathToFile);
+            const requestedFileContent = await this.fileContentGetter(args.pathToFile);
+            this.addFunctionResult('getFileContent', this.wrapFileContent(args.pathToFile, requestedFileContent));
             if (this.getUsedSymbols() > this.maxSymbols) {
               const removed = this.messages.pop();
               console.info("Too long, removed:", removed);
               const shortenData = requestedFileContent.substring(args.startLineNumber - 20, args.endLineNumber + 20);
-              this.addFunctionResult('getFileContent', shortenData);
+              this.addFunctionResult('getFileContent', this.wrapFileContent(args.pathToFile, shortenData));
               if (this.getUsedSymbols() > this.maxSymbols) {
                 console.warn("Context size exceed.");
                 return null;
               }
             }
 
-            this.addUserMsg("Use the addReviewCommentToFileLine to comment specific part of the code.");
+            this.addUserMsg("Use the addReviewCommentToFileLine to comment lines that necessitates a comment.");
             continue;
           }
           else if (functionToUse.name === 'addReviewCommentToFileLine') {
-            console.info("fileCommenter:", args.reviewCommentFromAIExpert, args.filename, args.lineNumber);
+            console.info("fileCommenter:", args.reviewCommentFromAIExpert, args.fileName, args.lineNumber + 1);
             this.addFunctionResult('addReviewCommentToFileLine', "success (user will read the note)");
-            await this.fileCommenter(args.reviewCommentFromAIExpert, args.filename, args.lineNumber + 1);
+            this.addUserMsg("If that is all just don't use any functions and write brief summary."); 
+            await this.fileCommenter(args.reviewCommentFromAIExpert, args.fileName, args.lineNumber + 1);
             continue;
           }
         }
