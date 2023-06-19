@@ -12,7 +12,8 @@ class OpenAIAPI {
         content:
           "Identify code review experts and act as the best expert in the field.\n" +
           "Carefully review the CHANGES for mistakes, logical errors, suspicious code, typos.\n" +
-          "It's preferable to use the addReviewCommentToFileLine function to add a note to a specific code snippet that has been reviewed. This makes your feedback more precise."
+          "It's preferable to use the addReviewCommentToFileLine function to add a note to a specific code snippet that has been reviewed. This makes your feedback more precise.\n" +
+          "YOU NEVER MAKE MORE THAN ONE COMMENT TO SAME CODE."
       }
     ];
   }
@@ -22,12 +23,22 @@ class OpenAIAPI {
   }
 
   addUserMsg(message) {
-    console.info(`addUserMsg: ${message}`);
     this.messages.push(
       {
         role: "user",
         content: message,
       });
+    console.info(`addUserMsg: ${message}`);
+  }
+
+  addFunctionResult(functionName, result) {
+    this.messages.push(
+      {
+        role: "function",
+        name: functionName,
+        content: JSON.stringify(result),
+      });
+    console.info(`addFunctionResult: ${result}`);
   }
 
   getUsedSymbols() {
@@ -47,7 +58,6 @@ class OpenAIAPI {
       try {
         const response = await this.openaiClient.createChatCompletion({
           model: model,
-          temperature: 0.2,
           messages: this.messages,
           functions: [
             {
@@ -84,7 +94,7 @@ class OpenAIAPI {
                   },
                   lineNumber: {
                     type: "integer",
-                    description: 'You need to specify the line number in the file to place the comment correctly for the relevant piece of code.',
+                    description: 'The line number of the file which needed to specify to place comment for a right piece of code.',
                   },
                   reviewCommentFromAIExpert: {
                     type: "string",
@@ -104,14 +114,14 @@ class OpenAIAPI {
           const functionToUse = response.data.choices[0].message?.function_call;
           const args = JSON.parse(functionToUse.arguments);
           if (functionToUse.name === 'getFileContent') {
-            console.info("fileContentGetter:", args.filename);            
+            console.info("fileContentGetter:", args.filename);
             const requestedFileContent = await this.fileContentGetter(args.filename);
-            this.addUserMsg(requestedFileContent);
+            this.addFunctionResult('getFileContent', requestedFileContent);
             if (this.getUsedSymbols() > this.maxSymbols) {
               const removed = this.messages.pop();
               console.info("Too long, removed:", removed);
               const shortenData = requestedFileContent.substring(args.startLineNumber - 20, args.endLineNumber + 20);
-              this.addUserMsg(shortenData);
+              this.addFunctionResult('getFileContent', shortenData);
               if (this.getUsedSymbols() > this.maxSymbols) {
                 console.warn("Context size exceed.");
                 return null;
@@ -123,8 +133,8 @@ class OpenAIAPI {
           }
           else if (functionToUse.name === 'addReviewCommentToFileLine') {
             console.info("fileCommenter:", args.reviewCommentFromAIExpert, args.filename, args.lineNumber);
+            this.addFunctionResult('addReviewCommentToFileLine', "success (user will read the note)");
             await this.fileCommenter(args.reviewCommentFromAIExpert, args.filename, args.lineNumber + 1);
-            this.addUserMsg("Thank you for your feedback provided through addReviewCommentToFileLine. Do you have any other codes to review or a have summary to finish? Please avoid repetition.");
             continue;
           }
         }
