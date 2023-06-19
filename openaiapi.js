@@ -108,10 +108,10 @@ class OpenAIAPI {
           function_call: 'auto',
         });
 
-        let answer = response.data.choices[0].message?.content;
+        let answer = response.data.choices[0].message.content;
         const requestToUseFunction = response.data.choices[0].finish_reason === 'function_call';
         if (requestToUseFunction) {
-          const functionToUse = response.data.choices[0].message?.function_call;
+          const functionToUse = response.data.choices[0].message.function_call;
           const args = JSON.parse(functionToUse.arguments);
           if (functionToUse.name === 'getFileContent') {
             console.info("fileContentGetter:", args.pathToFile);
@@ -129,6 +129,7 @@ class OpenAIAPI {
             }
 
             this.addUserMsg("Use the addReviewCommentToFileLine to comment lines that necessitates a comment.");
+            retries = 0;
             continue;
           }
           else if (functionToUse.name === 'addReviewCommentToFileLine') {
@@ -136,6 +137,7 @@ class OpenAIAPI {
             this.addFunctionResult('addReviewCommentToFileLine', "success (user will read the note)");
             this.addUserMsg("If that is all just don't use any functions and write brief summary."); 
             await this.fileCommenter(args.reviewCommentFromAIExpert, args.fileName, args.lineNumber + 1);
+            retries = 0;
             continue;
           }
         }
