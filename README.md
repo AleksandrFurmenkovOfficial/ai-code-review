@@ -43,7 +43,7 @@ jobs:
 
     steps:
     - name: AI Code Review
-      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.2.2
+      uses: xonlly/ai-code-review@v0.2.2
       with:
         token: ${{ secrets.GITHUB_TOKEN }} # or your token with access to PRs, read for files and write for comments
         openai_api_key: ${{ secrets.OPENAI_API_KEY }} # You should have access to gpt-4-0613
