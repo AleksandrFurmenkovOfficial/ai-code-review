@@ -2,10 +2,17 @@ const core = require("@actions/core");
 const GitHubAPI = require("./githubapi");
 const OpenAIAPI = require("./openaiapi");
 
-const isFileToReview = (filename, fileExtensions, excludePaths) => {
+const isFileToReview = (filename, fileExtensions, excludePaths, excludeFileExtensions) => {
     if (fileExtensions) {
         const extensions = fileExtensions.split(",").map((ext) => ext.trim());
         if (!extensions.some((ext) => filename.endsWith(ext))) {
+            return false;
+        }
+    }
+
+    if (excludeFileExtensions) {
+        const extensions = excludeFileExtensions.split(",").map((ext) => ext.trim());
+        if (extensions.some((ext) => filename.endsWith(ext))) {
             return false;
         }
     }
@@ -20,9 +27,9 @@ const isFileToReview = (filename, fileExtensions, excludePaths) => {
     return true;
 }
 
-const getFilteredChangedFiles = (changedFiles, fileExtensions, excludePaths) => {
+const getFilteredChangedFiles = (changedFiles, fileExtensions, excludePaths, excludeFileExtensions) => {
     let filteredFiles = changedFiles;
-    return filteredFiles.filter((file) => isFileToReview(file.filename, fileExtensions, excludePaths));
+    return filteredFiles.filter((file) => isFileToReview(file.filename, fileExtensions, excludePaths, excludeFileExtensions));
 };
 
 const getApproxMaxSymbols = () => {
@@ -84,10 +91,12 @@ const main = async () => {
         const changedFiles = await githubAPI.listFiles(owner, repo, pullNumber);
         const fileExtensions = core.getInput("file_extensions", { required: false });
         const excludePaths = core.getInput("exclude_paths", { required: false });
+        const excludeFileExtensions = core.getInput("exclude_file_extensions", { required: false });
         const filteredChangedFiles = getFilteredChangedFiles(
             changedFiles,
             fileExtensions,
-            excludePaths
+            excludePaths,
+            excludeFileExtensions
         );
        
         const allInOneSucess = await processAllInOneStrategy(filteredChangedFiles, openaiAPI, githubAPI, owner, repo, pullNumber);

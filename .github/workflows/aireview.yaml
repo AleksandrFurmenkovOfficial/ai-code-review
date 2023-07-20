@@ -1,6 +1,6 @@
 name: PR review
 
-on: 
+on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 
@@ -17,5 +17,6 @@ jobs:
           owner: ${{ github.repository_owner }}
           repo: ${{ github.event.repository.name }}
           pr_number: ${{ github.event.number }}
-          #file_extensions: ".py,.js,.html" # for example
+          #file_extensions: ".py,.js,.html" # for example whitelist
           #exclude_paths: "test/,docs/"     # for example
+          #exclude_file_extensions: ".md" # for example blacklist
