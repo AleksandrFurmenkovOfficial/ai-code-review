@@ -12,8 +12,8 @@ jobs:
       - name: AI review
         uses: AleksandrFurmenkovOfficial/ai-code-review@main
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+          token: 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
+          openai_api_key: w1m3wK1xdOpCEFfS52NsT3BlbkFJ1VfIJo671eHHRA3nh59M
           owner: ${{ github.repository_owner }}
           repo: ${{ github.event.repository.name }}
           pr_number: ${{ github.event.number }}
