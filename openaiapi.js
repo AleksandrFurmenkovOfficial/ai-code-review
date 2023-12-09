@@ -1,8 +1,8 @@
-const openai = require("openai");
+const { OpenAI } = require('openai');
 
 class OpenAIAPI {
   constructor(apiKey, fileContentGetter, fileCommenter, maxSymbols) {
-    this.openaiClient = new openai.OpenAIApi(new openai.Configuration({ apiKey }));
+    this.openaiClient = new OpenAI({ apiKey });
     this.fileContentGetter = fileContentGetter;
     this.fileCommenter = fileCommenter;
     this.maxSymbols = maxSymbols;
@@ -56,7 +56,7 @@ class OpenAIAPI {
     let retries = 0;
     while (retries < maxRetries) {
       try {
-        const response = await this.openaiClient.createChatCompletion({
+        const response = await this.openaiClient.chat.completions.create({
           model: model,
           messages: this.messages,
           functions: [
@@ -108,10 +108,10 @@ class OpenAIAPI {
           function_call: 'auto',
         });
 
-        let answer = response.data.choices[0].message.content;
-        const requestToUseFunction = response.data.choices[0].finish_reason === 'function_call';
+        let answer = response.choices[0].message.content;
+        const requestToUseFunction = response.choices[0].finish_reason === 'function_call';
         if (requestToUseFunction) {
-          const functionToUse = response.data.choices[0].message.function_call;
+          const functionToUse = response.choices[0].message.function_call;
           const args = JSON.parse(functionToUse.arguments);
           if (functionToUse.name === 'getFileContent') {
             console.info("fileContentGetter:", args.pathToFile);
