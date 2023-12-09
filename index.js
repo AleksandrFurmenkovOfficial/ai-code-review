@@ -26,14 +26,14 @@ const getFilteredChangedFiles = (changedFiles, fileExtensions, excludePaths) => 
 };
 
 const getApproxMaxSymbols = () => {
-    const maxTokens = 8192;
+    const maxTokens = 70000;
     const maxSymbols = maxTokens * 4;
     const oneFifthInSymbols = maxSymbols / 5;
     const maxInputSymbols = oneFifthInSymbols * 4;
     return maxInputSymbols;
 }
 
-const getAIModelName = () => "gpt-4-0613"; // gpt-4-32k-0613
+const getAIModelName = () => "gpt-4-1106-preview";
 
 const processAllInOneStrategy = async (filteredChangedFiles, openaiAPI, githubAPI, owner, repo, pullNumber) => {
     let contentToReview = Object.values(filteredChangedFiles).reduce(
