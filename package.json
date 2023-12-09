@@ -19,7 +19,7 @@
   "homepage": "https://github.com/AleksandrFurmenkovOfficial/ai-code-review#readme",
   "dependencies": {
     "@actions/core": "^1.10.1",
-    "@actions/github": "^5.1.1",
+    "@actions/github": "^6.0.0",
     "openai": "^4.20.0"
   },
   "devDependencies": {
