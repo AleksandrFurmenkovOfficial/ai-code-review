@@ -1,107 +1,55 @@
 const core = require("@actions/core");
-const GitHubAPI = require("./githubapi");
-const OpenAIAPI = require("./openaiapi");
 
-const isFileToReview = (filename, fileExtensions, excludePaths) => {
-    if (fileExtensions) {
-        const extensions = fileExtensions.split(",").map((ext) => ext.trim());
-        if (!extensions.some((ext) => filename.endsWith(ext))) {
-            return false;
-        }
-    }
-
-    if (excludePaths) {
-        const paths = excludePaths.split(",").map((path) => path.trim());
-        if (paths.some((path) => filename.startsWith(path))) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-const getFilteredChangedFiles = (changedFiles, fileExtensions, excludePaths) => {
-    let filteredFiles = changedFiles;
-    return filteredFiles.filter((file) => isFileToReview(file.filename, fileExtensions, excludePaths));
-};
-
-const getApproxMaxSymbols = () => {
-    const maxTokens = 70000;
-    const maxSymbols = maxTokens * 4;
-    const oneFifthInSymbols = maxSymbols / 5;
-    const maxInputSymbols = oneFifthInSymbols * 4;
-    return maxInputSymbols;
-}
-
-const getAIModelName = () => "gpt-4-1106-preview";
-
-const processAllInOneStrategy = async (filteredChangedFiles, openaiAPI, githubAPI, owner, repo, pullNumber) => {
-    let contentToReview = Object.values(filteredChangedFiles).reduce(
-        (accumulator, file) => `${accumulator}${openaiAPI.wrapFileContent(file.filename, file.patch)}`,
-        ""
-    );
-    if (contentToReview.length <= getApproxMaxSymbols()) {
-        const commonComment = await openaiAPI.doReview(getAIModelName(), contentToReview);
-        if (commonComment)
-        {
-          console.debug(commonComment);
-          await githubAPI.createPRComment(owner, repo, pullNumber, commonComment);
-          return true;
-        }
-    }
-
-    return false;
-}
-
-const processDiffByDiffStrategy = async (filteredChangedFiles, openaiAPI) => {
-    for (const file of filteredChangedFiles) {
-        let contentToReview = `${openaiAPI.wrapFileContent(file.filename, file.patch)}`;
-        if (contentToReview.length <= getApproxMaxSymbols()) {
-            await openaiAPI.doReview(getAIModelName(), contentToReview);
-        } else {
-            console.info(`File patch ${file.filename} is too large to process.`);
-            continue;
-        }
-    }
-    
-    return true;
-}
+const GitHubAPI = require("./githubapi.js");
+const OpenAIAgent = require("./openai_agent.js");
 
 const main = async () => {
+    const getFilteredChangedFiles = (changedFiles, includeExtensions, excludeExtensions, includePaths, excludePaths) => {
+        const stringToArray = (inputString) => inputString.split(',').map(item => item.trim().replace(/\\/g, '/')).filter(Boolean);
+
+        const includeExtensionsArray = stringToArray(includeExtensions);
+        const excludeExtensionsArray = stringToArray(excludeExtensions);
+        const includePathsArray = stringToArray(includePaths);
+        const excludePathsArray = stringToArray(excludePaths);
+
+        const isFileToReview = (filename) => {
+            const isIncludedExtension = includeExtensionsArray.length === 0 || includeExtensionsArray.some(ext => filename.endsWith(ext));
+            const isExcludedExtension = excludeExtensionsArray.length > 0 && excludeExtensionsArray.some(ext => filename.endsWith(ext));
+            const isIncludedPath = includePathsArray.length === 0 || includePathsArray.some(path => filename.startsWith(path));
+            const isExcludedPath = excludePathsArray.length > 0 && excludePathsArray.some(path => filename.startsWith(path));
+
+            return isIncludedExtension && !isExcludedExtension && isIncludedPath && !isExcludedPath;
+        };
+
+        return changedFiles.filter(file => isFileToReview(file.filename.replace(/\\/g, '/')));
+    };
+
     try {
         const repo = core.getInput("repo", { required: true });
         const owner = core.getInput("owner", { required: true });
         const pullNumber = core.getInput("pr_number", { required: true });
-
         const githubToken = core.getInput("token", { required: true });
-        const githubAPI = new GitHubAPI(githubToken);
-        const pullRequestData = await githubAPI.getPullRequest(owner, repo, pullNumber);
-        const filesContentGetter = (filePath) => githubAPI.getContent(owner, repo, filePath, pullRequestData.head.sha);
-        const inFileCommenter = (comment, filePath, line) => githubAPI.createReviewComment(owner, repo, pullNumber, pullRequestData.head.sha, comment, filePath, line);
         const openaiApiKey = core.getInput("openai_api_key", { required: true });
-        const openaiAPI = new OpenAIAPI(openaiApiKey, filesContentGetter, inFileCommenter, getApproxMaxSymbols());
 
-        const changedFiles = await githubAPI.listFiles(owner, repo, pullNumber);
-        const fileExtensions = core.getInput("file_extensions", { required: false });
+        const includeExtensions = core.getInput("include_extensions", { required: false });
+        const excludeExtensions = core.getInput("exclude_extensions", { required: false });
+        const includePaths = core.getInput("include_paths", { required: false });
         const excludePaths = core.getInput("exclude_paths", { required: false });
-        const filteredChangedFiles = getFilteredChangedFiles(
-            changedFiles,
-            fileExtensions,
-            excludePaths
-        );
-       
-        const allInOneSucess = await processAllInOneStrategy(filteredChangedFiles, openaiAPI, githubAPI, owner, repo, pullNumber);
-        if (allInOneSucess)
-            return;
 
-        const diffByDiffSucess = await processDiffByDiffStrategy(filteredChangedFiles, openaiAPI);
-        if (diffByDiffSucess)
-            return;
+        const githubAPI = new GitHubAPI(githubToken);
+        const changedFiles = await githubAPI.listFiles(owner, repo, pullNumber);
+        const filteredChangedFiles = getFilteredChangedFiles(changedFiles, includeExtensions, excludeExtensions, includePaths, excludePaths);
 
-        console.error("Have no strategy to process such a big PR.");
+        const pullRequestData = await githubAPI.getPullRequest(owner, repo, pullNumber);
+        const fileContentGetter = async (filePath) => await githubAPI.getContent(owner, repo, filePath, pullRequestData.head.sha);
+        const fileCommentator = (comment, filePath, line) => {
+            githubAPI.createReviewComment(owner, repo, pullNumber, pullRequestData.head.sha, comment, filePath, line);
+        }
+        const openAI = new OpenAIAgent(openaiApiKey, fileContentGetter, fileCommentator);
+        await openAI.doReview(filteredChangedFiles);
+
     } catch (error) {
-        console.error(error);
-        core.setFailed(error.message);
+        core.warning(error);
     }
 };
 
