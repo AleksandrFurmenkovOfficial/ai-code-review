@@ -17,14 +17,20 @@ inputs:
   pr_number:
     description: 'Pull request number'
     required: true
-  file_extensions:
-    description: 'File extensions to review (comma-separated, e.g., ".py,.js,.html")'
+  include_extensions:
+    description: 'File extensions to include in the review (comma-separated, e.g., ".py,.js,.html")'
+    required: false
+  exclude_extensions:
+    description: 'File extensions to exclude from the review (comma-separated)'
+    required: false
+  include_paths:
+    description: 'Paths to include in the review (comma-separated)'
     required: false
   exclude_paths:
     description: 'Paths to exclude from review (comma-separated, e.g., "test/,docs/")'
     required: false
 
 runs:
-  using: 'node16'
+  using: 'node20'
   pre: 'setup.js'
   main: 'index.js'
