@@ -120,7 +120,6 @@ class OpenAIAPI {
             patch: file.patch
         }));
 
-        info(`Starting review for ${simpleChangedFiles}`);
         await this.initCodeReviewAssistant();
 
         let retries = 0;
@@ -179,7 +178,6 @@ class OpenAIAPI {
     async processRun() {
         do {
             this.runStatus = await this.openai.beta.threads.runs.retrieve(this.thread.id, this.run.id);
-            console.log(`Run status: ${this.runStatus.status}`);
 
             let tools_results = []
             if (this.runStatus.status === 'requires_action') {
