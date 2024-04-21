@@ -2,10 +2,6 @@
 
 Perform code review using OpenAI ChatGPT on your GitHub repositories.
 
-## Name
-
-AI Code Review
-
 ## Description
 
 Perform code review using OpenAI ChatGPT to analyze and provide feedback on your code. This GitHub Action helps improve the code quality by automatically reviewing pull requests, focusing on specified file extensions, and excluding specific paths.
@@ -63,4 +59,4 @@ jobs:
 
 This action will run on every opened or updated pull request, and it will review only the specified file types and exclude the specified paths.
 
-PS ***Written with GPT-4-turbo ***
+PS. ***Written with GPT-4-turbo***
