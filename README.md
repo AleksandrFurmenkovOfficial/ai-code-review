@@ -43,7 +43,7 @@ jobs:
 
     steps:
     - name: AI Code Review
-      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.2.2
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.3
       with:
         token: ${{ secrets.GITHUB_TOKEN }} # Token for accessing PRs, file reading, and commenting capabilities
         openai_api_key: ${{ secrets.OPENAI_API_KEY }} # Access to the GPT-4 class model
