@@ -17,5 +17,3 @@ jobs:
           owner: ${{ github.repository_owner }}
           repo: ${{ github.event.repository.name }}
           pr_number: ${{ github.event.number }}
-          #file_extensions: ".py,.js,.html" # for example
-          #exclude_paths: "test/,docs/"     # for example
