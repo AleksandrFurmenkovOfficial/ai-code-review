@@ -15,55 +15,72 @@ class OpenAIAPI {
             name: "GPT-4.5 AI core-reviwer",
             instructions:
                 "You are the smartest GPT-4.5 AI responsible for reviewing code in our company's GitHub PRs.\n" +
-                "- Review the user's changes for logical errors and typos.\n" +
+                "Review the user's changes for logical errors and typos.\n" +
                 "- Use the 'addReviewCommentToFileLine' tool to add a note to a code snippet containing a mistake. Pay extra attention to line numbers.\n" +
-                "- Avoid repeating the same issue multiple times! Instead, look for other serious mistakes.\n" +
-                "And a most matter point - comment only if you are 100% sure! Omit possible compilation errors.\n" +
-                "Use 'getFileContent' if you need more context to verify the provided changes!\n" +
-                "Warning! All results to user MUST be provided only via functions!",
+                "Avoid repeating the same issue multiple times! Instead, look for other serious mistakes.\n" +
+                "And a most important point - comment only if you are 100% sure! Omit possible compilation errors.\n" +
+                "- Use 'getFileContent' if you need more context to verify the provided changes!\n" +
+                "Warning! Lines in any file are calculated from 1. You should complete your work and provide results to the user only via functions!",
             tools: [{ type: "code_interpreter" }],
             model: "gpt-4-turbo-2024-04-09", // Rank 1 in "coding" category by https://chat.lmsys.org/?leaderboard
             tools: [{
-                type: "function",
-                function: {
-                    name: "getFileContent",
-                    description: "Gets the file content to better understand the provided changes",
-                    parameters: {
-                        type: "object",
-                        properties: {
-                            pathToFile: { type: "string", description: 'The fully qualified path to the file.' },
-                            startLineNumber: { type: "integer", description: 'The start line number of point of interest in the code.' },
-                            endLineNumber: { type: "integer", description: 'The end line number of point of interest in the code.' },
+                "type": "function",
+                "function": {
+                    "name": "getFileContent",
+                    "description": "Retrieves the file content to better understand the provided changes",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "pathToFile": {
+                                "type": "string",
+                                "description": "The fully qualified path to the file."
+                            },
+                            "startLineNumber": {
+                                "type": "integer",
+                                "description": "The starting line number of the code segment of interest."
+                            },
+                            "endLineNumber": {
+                                "type": "integer",
+                                "description": "The ending line number of the code segment of interest."
+                            }
                         },
-                        required: ["pathToFile", "startLineNumber", "endLineNumber"],
-                    },
+                        "required": ["pathToFile", "startLineNumber", "endLineNumber"]
+                    }
                 }
             },
             {
-                type: "function",
-                function: {
-                    name: "addReviewCommentToFileLine",
-                    description: "Adds an AI-generated review comment to the specified line.",
-                    parameters: {
-                        type: "object",
-                        properties: {
-                            fileName: { type: "string", description: 'The relative path to the file.' },
-                            lineNumber: { type: "integer", description: 'The line number in the file with an issue.' },
-                            foundIssueDescription: { type: "string", description: 'Description of real issue.' }
+                "type": "function",
+                "function": {
+                    "name": "addReviewCommentToFileLine",
+                    "description": "Adds an AI-generated review comment to the specified line in a file.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "fileName": {
+                                "type": "string",
+                                "description": "The relative path to the file."
+                            },
+                            "lineNumber": {
+                                "type": "integer",
+                                "description": "The line number in the file where the issue was found."
+                            },
+                            "foundIssueDescription": {
+                                "type": "string",
+                                "description": "Description of the issue found."
+                            }
                         },
-                        required: ["fileName", "lineNumber", "foundIssueDescription"],
-                    },
+                        "required": ["fileName", "lineNumber", "foundIssueDescription"]
+                    }
                 }
             },
             {
-                type: "function",
-                function: {
-                    name: "codeReviewDone",
-                    description: "Mark the code-review as finished.",
-                    parameters: {}
+                "type": "function",
+                "function": {
+                    "name": "codeReviewDone",
+                    "description": "Marks the code review as completed.",
+                    "parameters": {}
                 }
-            }
-        ]
+            }]
         });
     }
 
@@ -84,8 +101,13 @@ class OpenAIAPI {
 
     async addReviewCommentToFileLine(args) {
         const { fileName, lineNumber, foundIssueDescription } = args;
-        await this.fileCommentator(foundIssueDescription, fileName, lineNumber);
-        return "The note has been published.";
+        try {
+            await this.fileCommentator(foundIssueDescription, fileName, lineNumber);
+            return "The note has been published.";
+        }
+        catch (error) {
+            return `There is an error in the 'addReviewCommentToFileLine' usage! Error message:\n${JSON.stringify(error)}`
+        }
     }
 
     async doReview(changedFiles) {
@@ -155,7 +177,7 @@ class OpenAIAPI {
     }
 
     async processRun() {
-        do {       
+        do {
             this.runStatus = await this.openai.beta.threads.runs.retrieve(this.thread.id, this.run.id);
             console.log(`Run status: ${this.runStatus.status}`);
 
@@ -184,7 +206,7 @@ class OpenAIAPI {
                     tool_outputs: tools_results,
                 });
             }
-            
+
             await new Promise(resolve => setTimeout(resolve, 1000));
         } while (this.runStatus.status !== "completed");
     }
