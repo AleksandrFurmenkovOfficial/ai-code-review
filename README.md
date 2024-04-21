@@ -58,5 +58,3 @@ jobs:
 ```
 
 This action will run on every opened or updated pull request, and it will review only the specified file types and exclude the specified paths.
-
-PS. ***Written with GPT-4-turbo***
