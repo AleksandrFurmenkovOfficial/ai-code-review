@@ -1,4 +1,4 @@
-const { warning, info } = require("@actions/core");
+const { warning } = require("@actions/core");
 const { OpenAI } = require('openai');
 
 class OpenAIAgent {
@@ -124,7 +124,7 @@ class OpenAIAgent {
                 this.fileCache[pathToFile] = await this.fileContentGetter(pathToFile);
             }
             const content = this.fileCache[pathToFile];
-            return `${pathToFile}\n'''\n${content.substring(startLineNumber - span, endLineNumber + span)}\n'''\n`;
+            return "$```{pathToFile}\n\n${content.substring(startLineNumber - span, endLineNumber + span)}\n```\n";
         } catch (error) {
             this.handleError(error, 'Error getting file content', false);
             return `Error getting file content: ${error.message}`;
@@ -212,7 +212,7 @@ class OpenAIAgent {
         );
 
         for (const message of messages.data.reverse()) {
-            console.log(`${message.role} > ${message.content[0].text.value}`);
+            warning(`${message.role} > ${message.content[0].text.value}`);
         }
     }
 
