@@ -39,7 +39,7 @@ class OpenAIAgent {
                     "Review the user's changes for typos, real LOGICAL ERRORS, and CRITICAL security ISSUES.\n" +
                     "Use the 'addReviewCommentToFileLine' tool to add specific, actionable comments.\n" +
                     "Avoid repeating the same issue multiple times.\n" +
-                    "Comment only when you are 99% confident.\n" +
+                    "Comment only when you are at leat 99% confident! Do not report Consider/Ensure etc, only REAL issues!\n" +
                     "Use 'getFileContent' when you need more context.\n" +
                     "Line numbers start from 1. Provide results only via the provided functions.",
                 tools: [
@@ -102,7 +102,7 @@ class OpenAIAgent {
                     {
                         type: "function",
                         function: {
-                            name: "codeReviewDone",
+                            name: "markAsDone",
                             description: "Marks the code review as completed.",
                             parameters: {}
                         }
@@ -124,7 +124,7 @@ class OpenAIAgent {
                 this.fileCache[pathToFile] = await this.fileContentGetter(pathToFile);
             }
             const content = this.fileCache[pathToFile];
-            return "$```{pathToFile}\n\n${content.substring(startLineNumber - span, endLineNumber + span)}\n```\n";
+            return `\`\`\`${pathToFile}\n\n${content.substring(startLineNumber - span, endLineNumber + span)}\n\`\`\`\n`;
         } catch (error) {
             this.handleError(error, 'Error getting file content', false);
             return `Error getting file content: ${error.message}`;
@@ -224,18 +224,23 @@ class OpenAIAgent {
             if (this.runStatus.status === 'requires_action') {
                 for (const toolCall of this.runStatus.required_action.submit_tool_outputs.tool_calls) {
                     let result = '';
-                    let args = JSON.parse(toolCall.function.arguments);
-                    if (toolCall.function.name == 'getFileContent') {
-                        result = await this.getFileContent(args);
-                    }
-                    else if (toolCall.function.name == 'addReviewCommentToFileLine') {
-                        result = await this.addReviewCommentToFileLine(args);
-                    }
-                    else if (toolCall.function.name == 'codeReviewDone') {
-                        return;
-                    }
-                    else {
-                        result = `Unknown tool requested: ${toolCall.function.name}`;
+
+                    try {
+                        let args = JSON.parse(toolCall.function.arguments);
+                        if (toolCall.function.name == 'getFileContent') {
+                            result = await this.getFileContent(args);
+                        }
+                        else if (toolCall.function.name == 'addReviewCommentToFileLine') {
+                            result = await this.addReviewCommentToFileLine(args);
+                        }
+                        else if (toolCall.function.name == 'markAsDone') {
+                            return;
+                        }
+                        else {
+                            result = `Unknown tool requested: ${toolCall.function.name}`;
+                        }
+                    } catch (error) {
+                        result = `Error processing tool call: ${error.message}`;
                     }
 
                     tools_results.push({ tool_call_id: toolCall.id, output: result })
