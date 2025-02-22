@@ -58,6 +58,10 @@ inputs:
   exclude_paths:
     description: 'Paths to exclude from review (comma-separated, e.g., "test/,docs/")'
     required: false
+  fail_action_if_review_failed:
+    description: 'If set to true, the action fails when the review process fails'
+    required: false
+    default: 'false'
 
 runs:
   using: 'node20'

@@ -12,6 +12,8 @@ const validateInputs = (repo, owner, pullNumber, githubToken, aiProvider, apiKey
     if (!apiKey) throw new Error(`${aiProvider} API key is required.`);
 };
 
+const AI_REVIEW_COMMENT_PREFIX = "AI review done up to commit: ";
+
 const main = async () => {
     const getFilteredChangedFiles = (changedFiles, includeExtensions, excludeExtensions, includePaths, excludePaths) => {
         const stringToArray = (inputString) => inputString.split(',').map(item => item.trim().replace(/\\/g, '/')).filter(Boolean);
@@ -41,6 +43,7 @@ const main = async () => {
         const aiProvider = core.getInput("ai_provider", { required: true, trimWhitespace: true });
         const apiKey = core.getInput(`${aiProvider}_api_key`, { required: true, trimWhitespace: true });
         const model = core.getInput(`${aiProvider}_model`, { required: true, trimWhitespace: true });
+        const failAction = core.getInput("fail_action_if_review_failed", { required: false, trimWhitespace: true }).toLowerCase() === 'true';
 
         validateInputs(repo, owner, pullNumber, githubToken, aiProvider, apiKey);
 
@@ -50,24 +53,66 @@ const main = async () => {
         const excludePaths = core.getInput("exclude_paths", { required: false });
 
         const githubAPI = new GitHubAPI(githubToken);
-        const changedFiles = await githubAPI.listFiles(owner, repo, pullNumber);
-        const filteredChangedFiles = getFilteredChangedFiles(changedFiles, includeExtensions, excludeExtensions, includePaths, excludePaths);
-
         const pullRequestData = await githubAPI.getPullRequest(owner, repo, pullNumber);
-        const fileContentGetter = async (filePath) => await githubAPI.getContent(owner, repo, filePath, pullRequestData.head.sha);
+        
+        // Find the last AI review comment
+        const comments = await githubAPI.listPRComments(owner, repo, pullNumber);
+        const lastReviewComment = comments
+            .reverse()
+            .find(comment => comment.body.startsWith(AI_REVIEW_COMMENT_PREFIX));
+
+        let changedFiles;
+        const headCommit = pullRequestData.head.sha;
+
+        if (lastReviewComment) {
+            // Extract the last reviewed commit hash
+            const lastReviewedCommit = lastReviewComment.body
+                .replace(AI_REVIEW_COMMENT_PREFIX, '')
+                .split(' ')[0];
+
+            // Get changes since the last review
+            changedFiles = await githubAPI.getFilesBetweenCommits(
+                owner,
+                repo,
+                lastReviewedCommit,
+                headCommit
+            );
+        } else {
+            // First review - get all changes
+            changedFiles = await githubAPI.listFiles(owner, repo, pullNumber);
+        }
+
+        const filteredChangedFiles = getFilteredChangedFiles(
+            changedFiles,
+            includeExtensions,
+            excludeExtensions,
+            includePaths,
+            excludePaths
+        );
+
+        if (filteredChangedFiles.length === 0) {
+            core.info('No files to review');
+            return;
+        }
+
+        // Setup file content getter and commentator
+        const fileContentGetter = async (filePath) => 
+            await githubAPI.getContent(owner, repo, filePath, headCommit);
+        
         const fileCommentator = async (comment, filePath, side, line) => {
             await githubAPI.createReviewComment(
                 owner,
                 repo,
                 pullNumber,
-                pullRequestData.head.sha,
+                headCommit,
                 comment,
                 filePath,
                 side,
                 line
             );
-        }
+        };
 
+        // Initialize AI agent
         let aiAgent;
         switch (aiProvider) {
             case 'openai':
@@ -87,7 +132,21 @@ const main = async () => {
                 throw new Error(`Unsupported AI provider: ${aiProvider}`);
         }
 
-        await aiAgent.doReview(filteredChangedFiles);
+        // Perform the review
+        try {
+            await aiAgent.doReview(filteredChangedFiles);
+
+            // Add completion comment only if review was successful
+            const commentLink = `${AI_REVIEW_COMMENT_PREFIX}${headCommit}`;
+            await githubAPI.createPRComment(owner, repo, pullNumber, commentLink);
+        } catch (error) {
+            // Fail the GitHub Action if the new setting is true
+            if (failAction) {
+                core.setFailed(`Review failed: ${error.message}`);
+            } else {
+                throw error;
+            }
+        }
 
     } catch (error) {
         core.warning(`Warning: ${error.message}`);

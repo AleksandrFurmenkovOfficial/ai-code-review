@@ -36,10 +36,10 @@ class OpenAIAgent {
                 name: "AI Code Reviewer",
                 instructions:
                     "You are an expert AI code reviewer responsible for reviewing GitHub PRs.\n" +
-                    "Review the user's changes for logical errors, security issues, and best practices.\n" +
+                    "Review the user's changes for typos, real LOGICAL ERRORS, and CRITICAL security ISSUES.\n" +
                     "Use the 'addReviewCommentToFileLine' tool to add specific, actionable comments.\n" +
                     "Avoid repeating the same issue multiple times.\n" +
-                    "Comment only when you are 100% confident about the issue.\n" +
+                    "Comment only when you are 99% confident.\n" +
                     "Use 'getFileContent' when you need more context.\n" +
                     "Line numbers start from 1. Provide results only via the provided functions.",
                 tools: [
@@ -82,9 +82,9 @@ class OpenAIAgent {
                                     },
                                     lineNumber: {
                                         type: "integer",
-                                        description: "The line number in the pull request diff that the comment applies to. For a multi-line comment, the last line of the range that your comment applies to."
+                                        description: "The line number. The line of the blob in the pull request diff that the comment applies to. For a multi-line comment, the last line of the range that your comment applies to."
                                     },
-                                    foundIssueDescription: {
+                                    foundErrorDescription: {
                                         type: "string",
                                         description: "The review comment content"
                                     },
@@ -95,7 +95,7 @@ class OpenAIAgent {
                                         default: "RIGHT"
                                     }
                                 },
-                                required: ["fileName", "lineNumber", "foundIssueDescription"]
+                                required: ["fileName", "lineNumber", "foundErrorDescription"]
                             }
                         }
                     },
@@ -136,14 +136,14 @@ class OpenAIAgent {
      * @param {Object} args - The arguments for the function.
      * @param {string} args.fileName - The relative path to the file.
      * @param {number} args.lineNumber - The line number in the file.
-     * @param {string} args.foundIssueDescription - Description of the issue found.
+     * @param {string} args.foundErrorDescription - Description of the issue found.
      * @param {string} [args.side="RIGHT"] - The side of the diff (LEFT or RIGHT).
      * @returns {Promise<string>} The result of the operation.
      */
     async addReviewCommentToFileLine(args) {
-        const { fileName, lineNumber, foundIssueDescription, side = "RIGHT" } = args;
+        const { fileName, lineNumber, foundErrorDescription, side = "RIGHT" } = args;
         try {
-            await this.fileCommentator(foundIssueDescription, fileName, side, lineNumber);
+            await this.fileCommentator(foundErrorDescription, fileName, side, lineNumber);
             return "The review comment has been published.";
         } catch (error) {
             this.handleError(error, 'Error creating review comment', false);

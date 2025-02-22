@@ -146,6 +146,90 @@ class GitHubAPI {
             this.handleError(error, 'Error creating review comment');
         }
     }
+
+    /**
+     * Lists all comments in a pull request with pagination support.
+     * @param {string} owner - The repository owner.
+     * @param {string} repo - The repository name.
+     * @param {number} prNumber - The pull request number.
+     * @returns {Promise<Array>} The list of all comments.
+     */
+    async listPRComments(owner, repo, prNumber) {
+        try {
+            const allComments = [];
+            let page = 1;
+            while (true) {
+                const { data: comments } = await this.octokit.rest.issues.listComments({
+                    owner,
+                    repo,
+                    issue_number: prNumber,
+                    per_page: 100,
+                    page,
+                });
+                
+                allComments.push(...comments);
+                
+                if (comments.length < 100) break;
+                page++;
+            }
+            return allComments;
+        } catch (error) {
+            this.handleError(error, 'Error listing PR comments');
+        }
+    }
+
+    /**
+     * Gets all commits in a pull request with pagination support.
+     * @param {string} owner - The repository owner.
+     * @param {string} repo - The repository name.
+     * @param {number} prNumber - The pull request number.
+     * @returns {Promise<Array>} The list of all commits.
+     */
+    async listPRCommits(owner, repo, prNumber) {
+        try {
+            const allCommits = [];
+            let page = 1;
+            while (true) {
+                const { data: commits } = await this.octokit.rest.pulls.listCommits({
+                    owner,
+                    repo,
+                    pull_number: prNumber,
+                    per_page: 100,
+                    page,
+                });
+                
+                allCommits.push(...commits);
+                
+                if (commits.length < 100) break;
+                page++;
+            }
+            return allCommits;
+        } catch (error) {
+            this.handleError(error, 'Error listing PR commits');
+        }
+    }
+
+    /**
+     * Gets changed files between two commits.
+     * @param {string} owner - The repository owner.
+     * @param {string} repo - The repository name.
+     * @param {string} baseCommit - The base commit SHA.
+     * @param {string} headCommit - The head commit SHA.
+     * @returns {Promise<Array>} The list of changed files.
+     */
+    async getFilesBetweenCommits(owner, repo, baseCommit, headCommit) {
+        try {
+            const { data: comparison } = await this.octokit.rest.repos.compareCommits({
+                owner,
+                repo,
+                base: baseCommit,
+                head: headCommit,
+            });
+            return comparison.files || [];
+        } catch (error) {
+            this.handleError(error, 'Error comparing commits');
+        }
+    }
 }
 
 module.exports = GitHubAPI;
