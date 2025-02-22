@@ -18,7 +18,7 @@ jobs:
           
           # OpenAI Configuration (if using OpenAI)
           openai_api_key: ${{ secrets.OPENAI_API_KEY }}
-          openai_model: 'chatgpt-4o-latest'  # Optional, defaults to 'chatgpt-4o-latest'
+          # openai_model: 'gpt-4o'  # Optional, defaults to 'gpt-4o'
           
           # Google Configuration (if using Google)
           # google_api_key: ${{ secrets.GOOGLE_API_KEY }}
