@@ -99,7 +99,6 @@ const main = async () => {
             return;
         }
 
-        // Setup file content getter and commentator
         const fileContentGetter = async (filePath) =>
             await githubAPI.getContent(owner, repo, filePath, headCommit);
 
@@ -136,14 +135,10 @@ const main = async () => {
                 throw new Error(`Unsupported AI provider: ${aiProvider}`);
         }
 
-        // Perform the review
         const reviewSummary = await aiAgent.doReview(filteredChangedFiles);
-
-        // Add completion comment with summary
         const commentBody = `${AI_REVIEW_COMMENT_PREFIX}${headCommit}${SUMMARY_SEPARATOR}${reviewSummary || 'No summary provided.'}`;
         await githubAPI.createPRComment(owner, repo, pullNumber, commentBody);
     } catch (error) {
-        // Fail the GitHub Action if the new setting is true
         if (failAction) {
             core.error(error.stack);
             core.setFailed(`Review failed: ${error.message}`);

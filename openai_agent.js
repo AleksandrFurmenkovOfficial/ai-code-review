@@ -216,7 +216,7 @@ class OpenAIAgent {
             }
         );
 
-        await this.processRun();
+        const summary = await this.processRun();
 
         const messages = await this.openai.beta.threads.messages.list(
             this.thread.id
@@ -225,6 +225,8 @@ class OpenAIAgent {
         for (const message of messages.data.reverse()) {
             warning(`${message.role} > ${message.content[0].text.value}`);
         }
+
+        return summary;  // Return the summary here
     }
 
     async processRun() {
