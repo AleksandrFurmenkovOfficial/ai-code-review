@@ -13,6 +13,7 @@ const validateInputs = (repo, owner, pullNumber, githubToken, aiProvider, apiKey
 };
 
 const AI_REVIEW_COMMENT_PREFIX = "AI review done up to commit: ";
+const SUMMARY_SEPARATOR = "\n\n### Review Summary:\n";
 
 const main = async () => {
     const getFilteredChangedFiles = (changedFiles, includeExtensions, excludeExtensions, includePaths, excludePaths) => {
@@ -35,16 +36,16 @@ const main = async () => {
         return changedFiles.filter(file => isFileToReview(file.filename.replace(/\\/g, '/')));
     };
 
+    const repo = core.getInput("repo", { required: true, trimWhitespace: true });
+    const owner = core.getInput("owner", { required: true, trimWhitespace: true });
+    const pullNumber = core.getInput("pr_number", { required: true, trimWhitespace: true });
+    const githubToken = core.getInput("token", { required: true, trimWhitespace: true });
+    const aiProvider = core.getInput("ai_provider", { required: true, trimWhitespace: true });
+    const apiKey = core.getInput(`${aiProvider}_api_key`, { required: true, trimWhitespace: true });
+    const model = core.getInput(`${aiProvider}_model`, { required: true, trimWhitespace: true });
+    const failAction = core.getInput("fail_action_if_review_failed", { required: false, trimWhitespace: true }).toLowerCase() === 'true';
+    
     try {
-        const repo = core.getInput("repo", { required: true, trimWhitespace: true });
-        const owner = core.getInput("owner", { required: true, trimWhitespace: true });
-        const pullNumber = core.getInput("pr_number", { required: true, trimWhitespace: true });
-        const githubToken = core.getInput("token", { required: true, trimWhitespace: true });
-        const aiProvider = core.getInput("ai_provider", { required: true, trimWhitespace: true });
-        const apiKey = core.getInput(`${aiProvider}_api_key`, { required: true, trimWhitespace: true });
-        const model = core.getInput(`${aiProvider}_model`, { required: true, trimWhitespace: true });
-        const failAction = core.getInput("fail_action_if_review_failed", { required: false, trimWhitespace: true }).toLowerCase() === 'true';
-
         validateInputs(repo, owner, pullNumber, githubToken, aiProvider, apiKey);
 
         const includeExtensions = core.getInput("include_extensions", { required: false });
@@ -54,7 +55,7 @@ const main = async () => {
 
         const githubAPI = new GitHubAPI(githubToken);
         const pullRequestData = await githubAPI.getPullRequest(owner, repo, pullNumber);
-        
+
         // Find the last AI review comment
         const comments = await githubAPI.listPRComments(owner, repo, pullNumber);
         const lastReviewComment = comments
@@ -65,10 +66,11 @@ const main = async () => {
         const headCommit = pullRequestData.head.sha;
 
         if (lastReviewComment) {
-            core.info(`lastReviewComment: ${lastReviewComment}`);
+            core.info(`lastReviewComment: ${lastReviewComment.body}`);
 
-            // Extract the last reviewed commit hash
+            // Extract the last reviewed commit hash - taking only the first line
             const lastReviewedCommit = lastReviewComment.body
+                .split(SUMMARY_SEPARATOR)[0]  // Get the first part before summary
                 .replace(AI_REVIEW_COMMENT_PREFIX, '')
                 .split(' ')[0];
 
@@ -98,9 +100,9 @@ const main = async () => {
         }
 
         // Setup file content getter and commentator
-        const fileContentGetter = async (filePath) => 
+        const fileContentGetter = async (filePath) =>
             await githubAPI.getContent(owner, repo, filePath, headCommit);
-        
+
         const fileCommentator = async (comment, filePath, side, line) => {
             await githubAPI.createReviewComment(
                 owner,
@@ -135,27 +137,20 @@ const main = async () => {
         }
 
         // Perform the review
-        try {
-            await aiAgent.doReview(filteredChangedFiles);
+        const reviewSummary = await aiAgent.doReview(filteredChangedFiles);
 
-            // Add completion comment only if review was successful
-            const commentLink = `${AI_REVIEW_COMMENT_PREFIX}${headCommit}`;
-            await githubAPI.createPRComment(owner, repo, pullNumber, commentLink);
-        } catch (error) {
-            // Log full error stack trace
-            core.error(error.stack);
-            // Fail the GitHub Action if the new setting is true
-            if (failAction) {
-                core.setFailed(`Review failed: ${error.message}`);
-            } else {
-                throw error;
-            }
-        }
+        // Add completion comment with summary
+        const commentBody = `${AI_REVIEW_COMMENT_PREFIX}${headCommit}${SUMMARY_SEPARATOR}${reviewSummary || 'No summary provided.'}`;
+        await githubAPI.createPRComment(owner, repo, pullNumber, commentBody);
     } catch (error) {
-        core.warning(`Warning: ${error.message}`);
-        // Log full error stack trace
-        core.error(error.stack);
-        core.debug(error.stack);
+        // Fail the GitHub Action if the new setting is true
+        if (failAction) {
+            core.error(error.stack);
+            core.setFailed(`Review failed: ${error.message}`);
+        } else {
+            core.debug(error.stack);
+            core.warning(`Warning: ${error.message}`);
+        }
     }
 };
 

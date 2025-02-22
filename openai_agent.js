@@ -103,8 +103,17 @@ class OpenAIAgent {
                         type: "function",
                         function: {
                             name: "markAsDone",
-                            description: "Marks the code review as completed.",
-                            parameters: {}
+                            description: "Marks the code review as completed and provides a brief summary of changes.",
+                            parameters: {
+                                type: "object",
+                                properties: {
+                                    briefSummary: {
+                                        type: "string",
+                                        description: "A brief summary of changes made in the PR."
+                                    }
+                                },
+                                required: ["briefSummary"]
+                            }
                         }
                     }
                 ],
@@ -152,6 +161,7 @@ class OpenAIAgent {
     }
 
     async doReview(changedFiles) {
+        let reviewSummary = '';
         const simpleChangedFiles = changedFiles.map(file => ({
             filename: file.filename,
             status: file.status,
@@ -169,7 +179,7 @@ class OpenAIAgent {
             while (retries < maxRetries) {
                 this.thread = await this.openai.beta.threads.create();
                 try {
-                    await this.doReviewImpl(simpleChangedFiles);
+                    reviewSummary = await this.doReviewImpl(simpleChangedFiles);
                     break;
                 } catch (error) {
                     await this.openai.beta.threads.del(this.thread.id)
@@ -187,6 +197,7 @@ class OpenAIAgent {
         } catch (error) {
             this.handleError(error, 'Error in code review process', false);
         }
+        return reviewSummary;
     }
 
     async doReviewImpl(simpleChangedFiles) {
@@ -217,6 +228,7 @@ class OpenAIAgent {
     }
 
     async processRun() {
+        let summary = '';
         do {
             this.runStatus = await this.openai.beta.threads.runs.retrieve(this.thread.id, this.run.id);
 
@@ -234,7 +246,8 @@ class OpenAIAgent {
                             result = await this.addReviewCommentToFileLine(args);
                         }
                         else if (toolCall.function.name == 'markAsDone') {
-                            return;
+                            summary = args.briefSummary;
+                            return summary;
                         }
                         else {
                             result = `Unknown tool requested: ${toolCall.function.name}`;
@@ -253,6 +266,7 @@ class OpenAIAgent {
 
             await new Promise(resolve => setTimeout(resolve, 1000));
         } while (this.runStatus.status !== "completed");
+        return summary;
     }
 }
 
