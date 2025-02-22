@@ -63,14 +63,20 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }} # Token for accessing PRs, file reading, and commenting capabilities
         ai_provider: 'openai' # AI provider to use (openai, google, anthropic, or deepseek)
+        # AND
+        # OR
         openai_api_key: ${{ secrets.OPENAI_API_KEY }} # Access to the OpenAI API (if using OpenAI provider)
-        openai_model: 'chatgpt-4o-latest' # Optional, specify OpenAI model name
-        google_api_key: ${{ secrets.GOOGLE_API_KEY }} # Access to the Google API (if using Google provider)
-        google_model: 'gemini-2.0-flash-thinking-exp-01-21' # Optional, specify Google model name
-        anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }} # Access to the Anthropic API (if using Anthropic provider)
-        anthropic_model: 'claude-3-5-sonnet-20241022' # Optional, specify Anthropic model name
-        deepseek_api_key: ${{ secrets.DEEPSEEK_API_KEY }} # Access to the Deepseek API (if using Deepseek provider)
-        deepseek_model: 'deepseek-reasoner' # Optional, specify Deepseek model name
+        openai_model: 'gpt-4o' # Optional, specify OpenAI model name
+        # OR
+        # google_api_key: ${{ secrets.GOOGLE_API_KEY }} # Access to the Google API (if using Google provider)
+        # google_model: 'gemini-2.0-flash-thinking-exp-01-21' # Optional, specify Google model name
+        # OR
+        # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }} # Access to the Anthropic API (if using Anthropic provider)
+        # anthropic_model: 'claude-3-5-sonnet-20241022' # Optional, specify Anthropic model name
+        # OR
+        # deepseek_api_key: ${{ secrets.DEEPSEEK_API_KEY }} # Access to the Deepseek API (if using Deepseek provider)
+        # deepseek_model: 'deepseek-reasoner' # Optional, specify Deepseek model name
+        # AND
         owner: ${{ github.repository_owner }}
         repo: ${{ github.event.repository.name }}
         pr_number: ${{ github.event.number }}
@@ -83,4 +89,4 @@ jobs:
 
 This action will run on every opened or updated pull request, and it will review only the specified file types and exclude the specified paths.
 
-PS. ***Written with GPT-4-turbo***
+PS. ***Written with/by AIs***

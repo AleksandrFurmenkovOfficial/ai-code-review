@@ -2,13 +2,6 @@ const { warning } = require("@actions/core");
 const { OpenAI } = require('openai');
 
 class OpenAIAgent {
-    /**
-     * Creates a new OpenAI agent for code review.
-     * @param {string} apiKey - The OpenAI API key.
-     * @param {Function} fileContentGetter - Function to get file content.
-     * @param {Function} fileCommentator - Function to add review comments.
-     * @param {string} model - The OpenAI model to use.
-     */
     constructor(apiKey, fileContentGetter, fileCommentator, model) {
         this.openai = new OpenAI({ apiKey });
         this.fileContentGetter = fileContentGetter;
@@ -17,14 +10,8 @@ class OpenAIAgent {
         this.model = model;
     }
 
-    /**
-     * Handles errors by logging and optionally throwing them.
-     * @param {Error} error - The error to handle.
-     * @param {string} message - The custom error message.
-     * @param {boolean} throwError - Whether to throw the error.
-     */
     handleError(error, message, throwError = true) {
-        warning(`${message}: ${error.message}`);
+        warning(`${message}: ${error.message}\n${error.stack}`);
         if (throwError) {
             throw new Error(`${message}: ${error.message}`);
         }
@@ -126,29 +113,23 @@ class OpenAIAgent {
 
     async getFileContent(args) {
         const { pathToFile, startLineNumber, endLineNumber } = args;
-
         try {
             if (!(pathToFile in this.fileCache)) {
                 this.fileCache[pathToFile] = await this.fileContentGetter(pathToFile);
             }
             const content = this.fileCache[pathToFile];
             const span = 20;
-            return `\`\`\`${pathToFile}\n${content.substring(startLineNumber - span, endLineNumber + span)}\n\`\`\``;
+            const lines = content.split('\n');
+            const startIndex = Math.max(0, startLineNumber - 1 - span);
+            const endIndex = Math.min(lines.length, endLineNumber + span);
+            const selectedLines = lines.slice(startIndex, endIndex);
+            return `\`\`\`${pathToFile}\n${selectedLines.join('\n')}\n\`\`\``;
         } catch (error) {
             this.handleError(error, 'Error getting file content', false);
             return `Error getting file content: ${error.message}`;
         }
     }
 
-    /**
-     * Adds a review comment to a file line.
-     * @param {Object} args - The arguments for the function.
-     * @param {string} args.fileName - The relative path to the file.
-     * @param {number} args.lineNumber - The line number in the file.
-     * @param {string} args.foundErrorDescription - Description of the issue found.
-     * @param {string} [args.side="RIGHT"] - The side of the diff (LEFT or RIGHT).
-     * @returns {Promise<string>} The result of the operation.
-     */
     async addReviewCommentToFileLine(args) {
         const { fileName, lineNumber, foundErrorDescription, side = "RIGHT" } = args;
         try {
@@ -170,26 +151,23 @@ class OpenAIAgent {
             changes: file.changes,
             patch: file.patch
         }));
-
         try {
             await this.initCodeReviewAssistant();
             let retries = 0;
             const maxRetries = 3;
-
+            let thread;
             while (retries < maxRetries) {
-                this.thread = await this.openai.beta.threads.create();
+                thread = await this.openai.beta.threads.create();
                 try {
-                    reviewSummary = await this.doReviewImpl(simpleChangedFiles);
+                    reviewSummary = await this.doReviewImpl(simpleChangedFiles, thread);
                     break;
                 } catch (error) {
-                    await this.openai.beta.threads.del(this.thread.id)
+                    await this.openai.beta.threads.del(thread.id)
                         .catch(delError => warning(`Error deleting thread: ${delError.message}`));
-
                     retries++;
                     if (retries >= maxRetries) {
                         this.handleError(error, 'Max retries reached for code review');
                     }
-
                     warning(`Retry ${retries}/${maxRetries}: ${error.message}`);
                     await new Promise(resolve => setTimeout(resolve, Math.pow(2, retries) * 1000));
                 }
@@ -200,74 +178,61 @@ class OpenAIAgent {
         return reviewSummary;
     }
 
-    async doReviewImpl(simpleChangedFiles) {
-        this.message = await this.openai.beta.threads.messages.create(
-            this.thread.id,
-            {
-                role: "user",
-                content: `${JSON.stringify(simpleChangedFiles)}`
-            }
+    async doReviewImpl(simpleChangedFiles, thread) {
+        await this.openai.beta.threads.messages.create(
+            thread.id,
+            { role: "user", content: `${JSON.stringify(simpleChangedFiles)}` }
         );
-
-        this.run = await this.openai.beta.threads.runs.createAndPoll(
-            this.thread.id,
-            {
-                assistant_id: this.assistant.id,
-            }
+        const run = await this.openai.beta.threads.runs.createAndPoll(
+            thread.id,
+            { assistant_id: this.assistant.id }
         );
-
-        const summary = await this.processRun();
-
-        const messages = await this.openai.beta.threads.messages.list(
-            this.thread.id
-        );
-
+        const summary = await this.processRun(thread, run);
+        const messages = await this.openai.beta.threads.messages.list(thread.id);
         for (const message of messages.data.reverse()) {
             warning(`${message.role} > ${message.content[0].text.value}`);
         }
-
-        return summary;  // Return the summary here
+        return summary;
     }
 
-    async processRun() {
+    async processRun(thread, run) {
         let summary = '';
+        let iterations = 0;
+        const maxIterations = 42;
+        let runStatus = await this.openai.beta.threads.runs.retrieve(thread.id, run.id);
         do {
-            this.runStatus = await this.openai.beta.threads.runs.retrieve(this.thread.id, this.run.id);
-
-            let tools_results = []
-            if (this.runStatus.status === 'requires_action') {
-                for (const toolCall of this.runStatus.required_action.submit_tool_outputs.tool_calls) {
+            runStatus = await this.openai.beta.threads.runs.retrieve(thread.id, run.id);
+            let tools_results = [];
+            if (runStatus.status === 'requires_action') {
+                for (const toolCall of runStatus.required_action.submit_tool_outputs.tool_calls) {
                     let result = '';
-
                     try {
-                        let args = JSON.parse(toolCall.function.arguments);
-                        if (toolCall.function.name == 'getFileContent') {
+                        const args = JSON.parse(toolCall.function.arguments);
+                        if (toolCall.function.name === 'getFileContent') {
                             result = await this.getFileContent(args);
-                        }
-                        else if (toolCall.function.name == 'addReviewCommentToFileLine') {
+                        } else if (toolCall.function.name === 'addReviewCommentToFileLine') {
                             result = await this.addReviewCommentToFileLine(args);
-                        }
-                        else if (toolCall.function.name == 'markAsDone') {
+                        } else if (toolCall.function.name === 'markAsDone') {
                             summary = args.briefSummary;
                             return summary;
-                        }
-                        else {
+                        } else {
                             result = `Unknown tool requested: ${toolCall.function.name}`;
                         }
                     } catch (error) {
                         result = `Error processing tool call: ${error.message}`;
                     }
-
-                    tools_results.push({ tool_call_id: toolCall.id, output: result })
+                    tools_results.push({ tool_call_id: toolCall.id, output: result });
                 }
-
-                await this.openai.beta.threads.runs.submitToolOutputs(this.thread.id, this.run.id, {
+                await this.openai.beta.threads.runs.submitToolOutputs(thread.id, run.id, {
                     tool_outputs: tools_results,
                 });
             }
-
+            iterations++;
+            if (iterations > maxIterations) {
+                throw new Error("Too many iterations, stopping the loop to prevent a hang.");
+            }
             await new Promise(resolve => setTimeout(resolve, 1000));
-        } while (this.runStatus.status !== "completed");
+        } while (runStatus.status !== "completed");
         return summary;
     }
 }
