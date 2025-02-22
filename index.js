@@ -40,15 +40,7 @@ const main = async () => {
         const githubToken = core.getInput("token", { required: true, trimWhitespace: true });
         const aiProvider = core.getInput("ai_provider", { required: true, trimWhitespace: true });
         const apiKey = core.getInput(`${aiProvider}_api_key`, { required: true, trimWhitespace: true });
-
-        // Get model with default value based on provider
-        const defaultModels = {
-            'openai': 'chatgpt-4o-latest',
-            'google': 'gemini-2.0-flash-thinking-exp-01-21',
-            'anthropic': 'claude-3-5-sonnet-20241022',
-            'deepseek': 'deepseek-reasoner'
-        };
-        const model = core.getInput(`${aiProvider}_model`, { required: false, trimWhitespace: true }) || defaultModels[aiProvider];
+        const model = core.getInput(`${aiProvider}_model`, { required: true, trimWhitespace: true });
 
         validateInputs(repo, owner, pullNumber, githubToken, aiProvider, apiKey);
 
