@@ -13,9 +13,9 @@ inputs:
     description: 'OpenAI API key (required if using OpenAI provider)'
     required: false
   openai_model:
-    description: 'OpenAI model name (e.g., chatgpt-4o-latest, o3-mini)'
+    description: 'OpenAI model name (e.g., gpt-4o, o3-mini)'
     required: false
-    default: 'chatgpt-4o-latest'
+    default: 'gpt-4o'
   google_api_key:
     description: 'Google AI API key (required if using Google provider)'
     required: false
