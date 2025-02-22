@@ -1,13 +1,42 @@
 name: 'AI Code Review'
-description: 'Perform code review using OpenAI ChatGPT'
+description: 'Perform code review using various AI models (OpenAI, Google, Anthropic, Deepseek)'
 
 inputs:
   token:
     description: 'GitHub token'
     required: true
-  openai_api_key:
-    description: 'OpenAI API key'
+  ai_provider:
+    description: 'AI provider to use (openai, google, anthropic, or deepseek)'
     required: true
+    default: 'openai'
+  openai_api_key:
+    description: 'OpenAI API key (required if using OpenAI provider)'
+    required: false
+  openai_model:
+    description: 'OpenAI model name (e.g., chatgpt-4o-latest, o3-mini)'
+    required: false
+    default: 'chatgpt-4o-latest'
+  google_api_key:
+    description: 'Google AI API key (required if using Google provider)'
+    required: false
+  google_model:
+    description: 'Google model name (e.g., gemini-2.0-flash-thinking-exp-01-21)'
+    required: false
+    default: 'gemini-2.0-flash-thinking-exp-01-21'
+  anthropic_api_key:
+    description: 'Anthropic API key (required if using Anthropic provider)'
+    required: false
+  anthropic_model:
+    description: 'Anthropic model name (e.g., claude-3-5-sonnet-20241022)'
+    required: false
+    default: 'claude-3-5-sonnet-20241022'
+  deepseek_api_key:
+    description: 'Deepseek API key (required if using Deepseek provider)'
+    required: false
+  deepseek_model:
+    description: 'Deepseek model name (e.g., deepseek-reasoner)'
+    required: false
+    default: 'deepseek-reasoner'
   owner:
     description: 'Repository owner'
     required: true

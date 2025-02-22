@@ -3,6 +3,15 @@ const core = require("@actions/core");
 const GitHubAPI = require("./githubapi.js");
 const OpenAIAgent = require("./openai_agent.js");
 
+const validateInputs = (repo, owner, pullNumber, githubToken, aiProvider, apiKey) => {
+    if (!repo) throw new Error("Repository name is required.");
+    if (!owner) throw new Error("Owner name is required.");
+    if (!pullNumber || isNaN(pullNumber)) throw new Error("Pull request number must be a valid number.");
+    if (!githubToken) throw new Error("GitHub token is required.");
+    if (!aiProvider) throw new Error("AI provider is required.");
+    if (!apiKey) throw new Error(`${aiProvider} API key is required.`);
+};
+
 const main = async () => {
     const getFilteredChangedFiles = (changedFiles, includeExtensions, excludeExtensions, includePaths, excludePaths) => {
         const stringToArray = (inputString) => inputString.split(',').map(item => item.trim().replace(/\\/g, '/')).filter(Boolean);
@@ -25,11 +34,23 @@ const main = async () => {
     };
 
     try {
-        const repo = core.getInput("repo", { required: true });
-        const owner = core.getInput("owner", { required: true });
-        const pullNumber = core.getInput("pr_number", { required: true });
-        const githubToken = core.getInput("token", { required: true });
-        const openaiApiKey = core.getInput("openai_api_key", { required: true });
+        const repo = core.getInput("repo", { required: true, trimWhitespace: true });
+        const owner = core.getInput("owner", { required: true, trimWhitespace: true });
+        const pullNumber = core.getInput("pr_number", { required: true, trimWhitespace: true });
+        const githubToken = core.getInput("token", { required: true, trimWhitespace: true });
+        const aiProvider = core.getInput("ai_provider", { required: true, trimWhitespace: true });
+        const apiKey = core.getInput(`${aiProvider}_api_key`, { required: true, trimWhitespace: true });
+
+        // Get model with default value based on provider
+        const defaultModels = {
+            'openai': 'chatgpt-4o-latest',
+            'google': 'gemini-2.0-flash-thinking-exp-01-21',
+            'anthropic': 'claude-3-5-sonnet-20241022',
+            'deepseek': 'deepseek-reasoner'
+        };
+        const model = core.getInput(`${aiProvider}_model`, { required: false, trimWhitespace: true }) || defaultModels[aiProvider];
+
+        validateInputs(repo, owner, pullNumber, githubToken, aiProvider, apiKey);
 
         const includeExtensions = core.getInput("include_extensions", { required: false });
         const excludeExtensions = core.getInput("exclude_extensions", { required: false });
@@ -42,14 +63,43 @@ const main = async () => {
 
         const pullRequestData = await githubAPI.getPullRequest(owner, repo, pullNumber);
         const fileContentGetter = async (filePath) => await githubAPI.getContent(owner, repo, filePath, pullRequestData.head.sha);
-        const fileCommentator = (comment, filePath, line) => {
-            githubAPI.createReviewComment(owner, repo, pullNumber, pullRequestData.head.sha, comment, filePath, line);
+        const fileCommentator = async (comment, filePath, side, line) => {
+            await githubAPI.createReviewComment(
+                owner,
+                repo,
+                pullNumber,
+                pullRequestData.head.sha,
+                comment,
+                filePath,
+                side,
+                line
+            );
         }
-        const openAI = new OpenAIAgent(openaiApiKey, fileContentGetter, fileCommentator);
-        await openAI.doReview(filteredChangedFiles);
+
+        let aiAgent;
+        switch (aiProvider) {
+            case 'openai':
+                aiAgent = new OpenAIAgent(apiKey, fileContentGetter, fileCommentator, model);
+                break;
+            // Add cases for other AI providers here
+            // case 'google':
+            //     aiAgent = new GoogleAgent(apiKey, fileContentGetter, fileCommentator, model);
+            //     break;
+            // case 'anthropic':
+            //     aiAgent = new AnthropicAgent(apiKey, fileContentGetter, fileCommentator, model);
+            //     break;
+            // case 'deepseek':
+            //     aiAgent = new DeepseekAgent(apiKey, fileContentGetter, fileCommentator, model);
+            //     break;
+            default:
+                throw new Error(`Unsupported AI provider: ${aiProvider}`);
+        }
+
+        await aiAgent.doReview(filteredChangedFiles);
 
     } catch (error) {
-        core.warning(error);
+        core.warning(`Warning: ${error.message}`);
+        core.debug(error.stack);
     }
 };
 

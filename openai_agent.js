@@ -1,112 +1,153 @@
 const { warning, info } = require("@actions/core");
 const { OpenAI } = require('openai');
 
-class OpenAIAPI {
-
-    constructor(apiKey, fileContentGetter, fileCommentator) {
+class OpenAIAgent {
+    /**
+     * Creates a new OpenAI agent for code review.
+     * @param {string} apiKey - The OpenAI API key.
+     * @param {Function} fileContentGetter - Function to get file content.
+     * @param {Function} fileCommentator - Function to add review comments.
+     * @param {string} model - The OpenAI model to use.
+     */
+    constructor(apiKey, fileContentGetter, fileCommentator, model) {
         this.openai = new OpenAI({ apiKey });
         this.fileContentGetter = fileContentGetter;
         this.fileCommentator = fileCommentator;
         this.fileCache = {};
+        this.model = model;
+    }
+
+    /**
+     * Handles errors by logging and optionally throwing them.
+     * @param {Error} error - The error to handle.
+     * @param {string} message - The custom error message.
+     * @param {boolean} throwError - Whether to throw the error.
+     */
+    handleError(error, message, throwError = true) {
+        warning(`${message}: ${error.message}`);
+        if (throwError) {
+            throw new Error(`${message}: ${error.message}`);
+        }
     }
 
     async initCodeReviewAssistant() {
-        this.assistant = await this.openai.beta.assistants.create({
-            name: "GPT-4.5 AI core-reviwer",
-            instructions:
-                "You are the smartest GPT-4.5 AI responsible for reviewing code in our company's GitHub PRs.\n" +
-                "Review the user's changes for logical errors and typos.\n" +
-                "- Use the 'addReviewCommentToFileLine' tool to add a note to a code snippet containing a mistake. Pay extra attention to line numbers.\n" +
-                "Avoid repeating the same issue multiple times! Instead, look for other serious mistakes.\n" +
-                "And a most important point - comment only if you are 100% sure! Omit possible compilation errors.\n" +
-                "- Use 'getFileContent' if you need more context to verify the provided changes!\n" +
-                "Warning! Lines in any file are calculated from 1. You should complete your work and provide results to the user only via functions!",
-            tools: [{ type: "code_interpreter" }],
-            model: "gpt-4-turbo-2024-04-09", // Rank 1 in "coding" category by https://chat.lmsys.org/?leaderboard
-            tools: [{
-                "type": "function",
-                "function": {
-                    "name": "getFileContent",
-                    "description": "Retrieves the file content to better understand the provided changes",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "pathToFile": {
-                                "type": "string",
-                                "description": "The fully qualified path to the file."
-                            },
-                            "startLineNumber": {
-                                "type": "integer",
-                                "description": "The starting line number of the code segment of interest."
-                            },
-                            "endLineNumber": {
-                                "type": "integer",
-                                "description": "The ending line number of the code segment of interest."
+        try {
+            this.assistant = await this.openai.beta.assistants.create({
+                name: "AI Code Reviewer",
+                instructions:
+                    "You are an expert AI code reviewer responsible for reviewing GitHub PRs.\n" +
+                    "Review the user's changes for logical errors, security issues, and best practices.\n" +
+                    "Use the 'addReviewCommentToFileLine' tool to add specific, actionable comments.\n" +
+                    "Avoid repeating the same issue multiple times.\n" +
+                    "Comment only when you are 100% confident about the issue.\n" +
+                    "Use 'getFileContent' when you need more context.\n" +
+                    "Line numbers start from 1. Provide results only via the provided functions.",
+                tools: [
+                    {
+                        type: "function",
+                        function: {
+                            name: "getFileContent",
+                            description: "Retrieves file content for context",
+                            parameters: {
+                                type: "object",
+                                properties: {
+                                    pathToFile: {
+                                        type: "string",
+                                        description: "The fully qualified path to the file."
+                                    },
+                                    startLineNumber: {
+                                        type: "integer",
+                                        description: "The starting line number."
+                                    },
+                                    endLineNumber: {
+                                        type: "integer",
+                                        description: "The ending line number."
+                                    }
+                                },
+                                required: ["pathToFile", "startLineNumber", "endLineNumber"]
                             }
-                        },
-                        "required": ["pathToFile", "startLineNumber", "endLineNumber"]
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "addReviewCommentToFileLine",
-                    "description": "Adds an AI-generated review comment to the specified line in a file.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "fileName": {
-                                "type": "string",
-                                "description": "The relative path to the file."
-                            },
-                            "lineNumber": {
-                                "type": "integer",
-                                "description": "The line number in the file where the issue was found."
-                            },
-                            "foundIssueDescription": {
-                                "type": "string",
-                                "description": "Description of the issue found."
+                        }
+                    },
+                    {
+                        type: "function",
+                        function: {
+                            name: "addReviewCommentToFileLine",
+                            description: "Adds a review comment to a specific line in the pull request diff",
+                            parameters: {
+                                type: "object",
+                                properties: {
+                                    fileName: {
+                                        type: "string",
+                                        description: "The relative path to the file that necessitates a comment"
+                                    },
+                                    lineNumber: {
+                                        type: "integer",
+                                        description: "The line number in the pull request diff that the comment applies to. For a multi-line comment, the last line of the range that your comment applies to."
+                                    },
+                                    foundIssueDescription: {
+                                        type: "string",
+                                        description: "The review comment content"
+                                    },
+                                    side: {
+                                        type: "string",
+                                        description: "In a split diff view, the side of the diff that the pull request's changes appear on. Can be LEFT for deletions or RIGHT for additions/unchanged lines",
+                                        enum: ["LEFT", "RIGHT"],
+                                        default: "RIGHT"
+                                    }
+                                },
+                                required: ["fileName", "lineNumber", "foundIssueDescription"]
                             }
-                        },
-                        "required": ["fileName", "lineNumber", "foundIssueDescription"]
+                        }
+                    },
+                    {
+                        type: "function",
+                        function: {
+                            name: "codeReviewDone",
+                            description: "Marks the code review as completed.",
+                            parameters: {}
+                        }
                     }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "codeReviewDone",
-                    "description": "Marks the code review as completed.",
-                    "parameters": {}
-                }
-            }]
-        });
+                ],
+                model: this.model
+            });
+        } catch (error) {
+            this.handleError(error, 'Error initializing code review assistant');
+        }
     }
 
     async getFileContent(args) {
         const { pathToFile, startLineNumber, endLineNumber } = args;
         const span = 20;
 
-        let content = '';
-        if (pathToFile in this.fileCache) {
-            content = this.fileCache[pathToFile];
+        try {
+            if (!(pathToFile in this.fileCache)) {
+                this.fileCache[pathToFile] = await this.fileContentGetter(pathToFile);
+            }
+            const content = this.fileCache[pathToFile];
+            return `${pathToFile}\n'''\n${content.substring(startLineNumber - span, endLineNumber + span)}\n'''\n`;
+        } catch (error) {
+            this.handleError(error, 'Error getting file content', false);
+            return `Error getting file content: ${error.message}`;
         }
-        else {
-            content = await this.fileContentGetter(pathToFile);
-        }
-
-        return `${pathToFile}\n'''\n${content.substring(startLineNumber - span, endLineNumber + span)}\n'''\n`;
     }
 
+    /**
+     * Adds a review comment to a file line.
+     * @param {Object} args - The arguments for the function.
+     * @param {string} args.fileName - The relative path to the file.
+     * @param {number} args.lineNumber - The line number in the file.
+     * @param {string} args.foundIssueDescription - Description of the issue found.
+     * @param {string} [args.side="RIGHT"] - The side of the diff (LEFT or RIGHT).
+     * @returns {Promise<string>} The result of the operation.
+     */
     async addReviewCommentToFileLine(args) {
-        const { fileName, lineNumber, foundIssueDescription } = args;
+        const { fileName, lineNumber, foundIssueDescription, side = "RIGHT" } = args;
         try {
-            await this.fileCommentator(foundIssueDescription, fileName, lineNumber);
-            return "The note has been published.";
-        }
-        catch (error) {
-            return `There is an error in the 'addReviewCommentToFileLine' usage! Error message:\n${JSON.stringify(error)}`
+            await this.fileCommentator(foundIssueDescription, fileName, side, lineNumber);
+            return "The review comment has been published.";
+        } catch (error) {
+            this.handleError(error, 'Error creating review comment', false);
+            return `Error creating review comment: ${error.message}`;
         }
     }
 
@@ -120,31 +161,31 @@ class OpenAIAPI {
             patch: file.patch
         }));
 
-        await this.initCodeReviewAssistant();
+        try {
+            await this.initCodeReviewAssistant();
+            let retries = 0;
+            const maxRetries = 3;
 
-        let retries = 0;
-        const maxRetries = 3;
-        while (retries < maxRetries) {
+            while (retries < maxRetries) {
+                this.thread = await this.openai.beta.threads.create();
+                try {
+                    await this.doReviewImpl(simpleChangedFiles);
+                    break;
+                } catch (error) {
+                    await this.openai.beta.threads.del(this.thread.id)
+                        .catch(delError => warning(`Error deleting thread: ${delError.message}`));
 
-            this.thread = await this.openai.beta.threads.create();
-            try {
-                await this.doReviewImpl(simpleChangedFiles);
-                break;
+                    retries++;
+                    if (retries >= maxRetries) {
+                        this.handleError(error, 'Max retries reached for code review');
+                    }
 
-            } catch (error) {
-                const response = await this.openai.beta.threads.del(this.thread.id);
-                warning(response);
-
-                retries++;
-                if (retries >= maxRetries) {
-                    warning("Max retries reached. Unable to complete code review.");
-                    throw error;
+                    warning(`Retry ${retries}/${maxRetries}: ${error.message}`);
+                    await new Promise(resolve => setTimeout(resolve, Math.pow(2, retries) * 1000));
                 }
-
-                warning(`Error encountered: ${error.message}; retrying...`);
-                const delay = Math.pow(2, retries) * 1000;
-                await new Promise(resolve => setTimeout(resolve, delay));
             }
+        } catch (error) {
+            this.handleError(error, 'Error in code review process', false);
         }
     }
 
@@ -210,4 +251,4 @@ class OpenAIAPI {
     }
 }
 
-module.exports = OpenAIAPI;
+module.exports = OpenAIAgent;

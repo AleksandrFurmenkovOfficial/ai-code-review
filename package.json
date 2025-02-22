@@ -1,16 +1,36 @@
 {
   "name": "ai-code-review",
-  "version": "0.1.1",
-  "description": "Perform code review using OpenAI ChatGPT on your GitHub repositories.",
+  "version": "1.1.0",
+  "description": "AI Code Review is a GitHub Action that integrates various AI models (OpenAI, Google, Anthropic, Deepseek) into your code review process, providing automated feedback on pull requests. Improve your code quality and streamline your development workflow with this powerful and customizable AI-driven code review tool.",
   "main": "index.js",
   "scripts": {
-    "build": "npm build index.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/AleksandrFurmenkovOfficial/ai-code-review.git"
   },
-  "keywords": [],
+  "keywords": [
+    "nodejs",
+    "node",
+    "ai",
+    "js",
+    "ci",
+    "code",
+    "actions",
+    "ci-cd",
+    "code-review",
+    "node-js",
+    "action",
+    "cicd",
+    "openai",
+    "chatgpt",
+    "google",
+    "gemini",
+    "anthropic",
+    "claude",
+    "deepseek"
+  ],
   "author": "Aleksandr Furmenkov",
   "license": "MIT",
   "bugs": {
@@ -18,11 +38,10 @@
   },
   "homepage": "https://github.com/AleksandrFurmenkovOfficial/ai-code-review#readme",
   "dependencies": {
-    "@actions/core": "^1.10.1",
+    "@actions/core": "^1.11.1",
     "@actions/github": "^6.0.0",
-    "openai": "^4.52.3"
-  },
-  "devDependencies": {
-    "@vercel/ncc": "^0.38.1"
+    "@anthropic-ai/sdk": "^0.36.3",
+    "@google/generative-ai": "^0.22.0",
+    "openai": "^4.85.3"
   }
 }

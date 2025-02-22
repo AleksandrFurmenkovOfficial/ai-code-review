@@ -1,16 +1,32 @@
 # AI Code Review
 
-Perform code review using OpenAI ChatGPT on your GitHub repositories.
+Perform code review using various AI models (OpenAI, Google, Anthropic, Deepseek) on your GitHub repositories.
 
 ## Description
 
-Perform code review using OpenAI ChatGPT to analyze and provide feedback on your code. This GitHub Action helps improve the code quality by automatically reviewing pull requests, focusing on specified file extensions, and excluding specific paths.
+Perform code review using various AI models to analyze and provide feedback on your code. This GitHub Action helps improve the code quality by automatically reviewing pull requests, focusing on specified file extensions, and excluding specific paths.
 
 ## Inputs
 
 ***token*** - Required. This GitHub token is used for authentication and to access your GitHub repository.
 
-***openai_api_key*** - Required. This key is necessary to access OpenAI's ChatGPT API for code review purposes.
+***ai_provider*** - Required. The AI provider to use (openai, google, anthropic, or deepseek). Default is 'openai'.
+
+***openai_api_key*** - Required if using OpenAI provider. This key is necessary to access OpenAI's API for code review purposes.
+
+***openai_model*** - Optional. The OpenAI model name (e.g., chatgpt-4o-latest, o3-mini). Default is 'chatgpt-4o-latest'.
+
+***google_api_key*** - Required if using Google provider. This key is necessary to access Google's API for code review purposes.
+
+***google_model*** - Optional. The Google model name (e.g., gemini-2.0-flash-thinking-exp-01-21). Default is 'gemini-2.0-flash-thinking-exp-01-21'.
+
+***anthropic_api_key*** - Required if using Anthropic provider. This key is necessary to access Anthropic's API for code review purposes.
+
+***anthropic_model*** - Optional. The Anthropic model name (e.g., claude-3-5-sonnet-20241022). Default is 'claude-3-5-sonnet-20241022'.
+
+***deepseek_api_key*** - Required if using Deepseek provider. This key is necessary to access Deepseek's API for code review purposes.
+
+***deepseek_model*** - Optional. The Deepseek model name (e.g., deepseek-reasoner). Default is 'deepseek-reasoner'.
 
 ***owner*** - Required. The username of the repository owner.
 
@@ -46,7 +62,15 @@ jobs:
       uses: AleksandrFurmenkovOfficial/ai-code-review@v0.4.1
       with:
         token: ${{ secrets.GITHUB_TOKEN }} # Token for accessing PRs, file reading, and commenting capabilities
-        openai_api_key: ${{ secrets.OPENAI_API_KEY }} # Access to the GPT-4 class model
+        ai_provider: 'openai' # AI provider to use (openai, google, anthropic, or deepseek)
+        openai_api_key: ${{ secrets.OPENAI_API_KEY }} # Access to the OpenAI API (if using OpenAI provider)
+        openai_model: 'chatgpt-4o-latest' # Optional, specify OpenAI model name
+        google_api_key: ${{ secrets.GOOGLE_API_KEY }} # Access to the Google API (if using Google provider)
+        google_model: 'gemini-2.0-flash-thinking-exp-01-21' # Optional, specify Google model name
+        anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }} # Access to the Anthropic API (if using Anthropic provider)
+        anthropic_model: 'claude-3-5-sonnet-20241022' # Optional, specify Anthropic model name
+        deepseek_api_key: ${{ secrets.DEEPSEEK_API_KEY }} # Access to the Deepseek API (if using Deepseek provider)
+        deepseek_model: 'deepseek-reasoner' # Optional, specify Deepseek model name
         owner: ${{ github.repository_owner }}
         repo: ${{ github.event.repository.name }}
         pr_number: ${{ github.event.number }}
