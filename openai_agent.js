@@ -39,7 +39,7 @@ class OpenAIAgent {
                     "Review the user's changes for typos, real LOGICAL ERRORS, and CRITICAL security ISSUES.\n" +
                     "Use the 'addReviewCommentToFileLine' tool to add specific, actionable comments.\n" +
                     "Avoid repeating the same issue multiple times.\n" +
-                    "Comment only when you are at leat 99% confident! Do not report Consider/Ensure etc, only REAL issues!\n" +
+                    "Comment only when you are at least 99% confident! Do not report Consider/Ensure etc, only REAL issues!\n" +
                     "Use 'getFileContent' when you need more context.\n" +
                     "Line numbers start from 1. Provide results only via the provided functions.",
                 tools: [
@@ -117,14 +117,14 @@ class OpenAIAgent {
 
     async getFileContent(args) {
         const { pathToFile, startLineNumber, endLineNumber } = args;
-        const span = 20;
 
         try {
             if (!(pathToFile in this.fileCache)) {
                 this.fileCache[pathToFile] = await this.fileContentGetter(pathToFile);
             }
             const content = this.fileCache[pathToFile];
-            return `\`\`\`${pathToFile}\n\n${content.substring(startLineNumber - span, endLineNumber + span)}\n\`\`\`\n`;
+            const span = 20;
+            return `\`\`\`${pathToFile}\n${content.substring(startLineNumber - span, endLineNumber + span)}\n\`\`\``;
         } catch (error) {
             this.handleError(error, 'Error getting file content', false);
             return `Error getting file content: ${error.message}`;

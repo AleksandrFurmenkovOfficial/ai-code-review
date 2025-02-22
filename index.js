@@ -65,6 +65,8 @@ const main = async () => {
         const headCommit = pullRequestData.head.sha;
 
         if (lastReviewComment) {
+            core.info(`lastReviewComment: ${lastReviewComment}`);
+
             // Extract the last reviewed commit hash
             const lastReviewedCommit = lastReviewComment.body
                 .replace(AI_REVIEW_COMMENT_PREFIX, '')
@@ -140,6 +142,8 @@ const main = async () => {
             const commentLink = `${AI_REVIEW_COMMENT_PREFIX}${headCommit}`;
             await githubAPI.createPRComment(owner, repo, pullNumber, commentLink);
         } catch (error) {
+            // Log full error stack trace
+            core.error(error.stack);
             // Fail the GitHub Action if the new setting is true
             if (failAction) {
                 core.setFailed(`Review failed: ${error.message}`);
@@ -147,9 +151,10 @@ const main = async () => {
                 throw error;
             }
         }
-
     } catch (error) {
         core.warning(`Warning: ${error.message}`);
+        // Log full error stack trace
+        core.error(error.stack);
         core.debug(error.stack);
     }
 };
