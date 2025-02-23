@@ -14,7 +14,7 @@ Perform code review using various AI models to analyze and provide feedback on y
 
 ***openai_api_key*** - Required if using OpenAI provider. This key is necessary to access OpenAI's API for code review purposes.
 
-***openai_model*** - Optional. The OpenAI model name (e.g., chatgpt-4o-latest, o3-mini). Default is 'chatgpt-4o-latest'.
+***openai_model*** - Optional. The OpenAI model name (e.g., gpt-4o, o3-mini). Default is 'gpt-4o'.
 
 ***google_api_key*** - Required if using Google provider. This key is necessary to access Google's API for code review purposes.
 
@@ -42,12 +42,16 @@ Perform code review using various AI models to analyze and provide feedback on y
 
 ***exclude_paths*** - Optional. A comma-separated list of directory paths to exclude from the review (e.g., "test/,docs/"). If not specified, the action will consider all paths.
 
-## Usage
+***fail_action_if_review_failed*** - Optional. If set to true, the action fails when the review process fails. Default is 'false'.
 
-To use this action, create a new .github/workflows/ai-code-review.yml file in your GitHub repository with the following content:
+## Usage Examples
+
+Create a new `.github/workflows/ai-code-review.yml` file in your GitHub repository. Below are examples for different AI providers:
+
+### OpenAI Example
 
 ```yaml
-name: AI Code Review
+name: AI Code Review with OpenAI
 
 on:
   pull_request:
@@ -56,37 +60,121 @@ on:
 jobs:
   ai_code_review:
     runs-on: ubuntu-latest
-
     steps:
     - name: AI Code Review
       uses: AleksandrFurmenkovOfficial/ai-code-review@v0.4.1
       with:
-        token: ${{ secrets.GITHUB_TOKEN }} # Token for accessing PRs, file reading, and commenting capabilities
-        ai_provider: 'openai' # AI provider to use (openai, google, anthropic, or deepseek)
-        # AND
-        # OR
-        openai_api_key: ${{ secrets.OPENAI_API_KEY }} # Access to the OpenAI API (if using OpenAI provider)
-        openai_model: 'gpt-4o' # Optional, specify OpenAI model name
-        # OR
-        # google_api_key: ${{ secrets.GOOGLE_API_KEY }} # Access to the Google API (if using Google provider)
-        # google_model: 'gemini-2.0-flash-thinking-exp-01-21' # Optional, specify Google model name
-        # OR
-        # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }} # Access to the Anthropic API (if using Anthropic provider)
-        # anthropic_model: 'claude-3-5-sonnet-20241022' # Optional, specify Anthropic model name
-        # OR
-        # deepseek_api_key: ${{ secrets.DEEPSEEK_API_KEY }} # Access to the Deepseek API (if using Deepseek provider)
-        # deepseek_model: 'deepseek-reasoner' # Optional, specify Deepseek model name
-        # AND
+        token: ${{ secrets.GITHUB_TOKEN }}
+        ai_provider: 'openai'
+        openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+        openai_model: 'gpt-4o'
         owner: ${{ github.repository_owner }}
         repo: ${{ github.event.repository.name }}
         pr_number: ${{ github.event.number }}
-        include_extensions: ${{ steps.inputs.include_extensions }} # Optional, specify file types to include e.g., ".py,.js,.html"
-        exclude_extensions: ${{ steps.inputs.exclude_extensions }} # Optional, specify file types to exclude
-        include_paths: ${{ steps.inputs.include_paths }} # Optional, specify directories to include
-        exclude_paths: ${{ steps.inputs.exclude_paths }} # Optional, specify directories to exclude
-
 ```
 
-This action will run on every opened or updated pull request, and it will review only the specified file types and exclude the specified paths.
+### Google Example
+
+```yaml
+name: AI Code Review with Google
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  ai_code_review:
+    runs-on: ubuntu-latest
+    steps:
+    - name: AI Code Review
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.4.1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        ai_provider: 'google'
+        google_api_key: ${{ secrets.GOOGLE_API_KEY }}
+        google_model: 'gemini-2.0-flash-thinking-exp-01-21'
+        owner: ${{ github.repository_owner }}
+        repo: ${{ github.event.repository.name }}
+        pr_number: ${{ github.event.number }}
+```
+
+### Anthropic Example
+
+```yaml
+name: AI Code Review with Anthropic
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  ai_code_review:
+    runs-on: ubuntu-latest
+    steps:
+    - name: AI Code Review
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.4.1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        ai_provider: 'anthropic'
+        anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+        anthropic_model: 'claude-3-5-sonnet-20241022'
+        owner: ${{ github.repository_owner }}
+        repo: ${{ github.event.repository.name }}
+        pr_number: ${{ github.event.number }}
+```
+
+### Deepseek Example
+
+```yaml
+name: AI Code Review with Deepseek
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  ai_code_review:
+    runs-on: ubuntu-latest
+    steps:
+    - name: AI Code Review
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.4.1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        ai_provider: 'deepseek'
+        deepseek_api_key: ${{ secrets.DEEPSEEK_API_KEY }}
+        deepseek_model: 'deepseek-reasoner'
+        owner: ${{ github.repository_owner }}
+        repo: ${{ github.event.repository.name }}
+        pr_number: ${{ github.event.number }}
+```
+
+### Advanced Configuration Example
+
+```yaml
+name: AI Code Review with Advanced Settings
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  ai_code_review:
+    runs-on: ubuntu-latest
+    steps:
+    - name: AI Code Review
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.4.1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        ai_provider: 'openai'
+        openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+        owner: ${{ github.repository_owner }}
+        repo: ${{ github.event.repository.name }}
+        pr_number: ${{ github.event.number }}
+        include_extensions: '.py,.js,.tsx'
+        exclude_extensions: '.test.js'
+        include_paths: 'src/,app/'
+        exclude_paths: 'test/,docs/'
+        fail_action_if_review_failed: 'true'
+```
 
 PS. ***Written with/by AIs***

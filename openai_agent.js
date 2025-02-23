@@ -1,4 +1,4 @@
-const { warning } = require("@actions/core");
+const { warning, info } = require("@actions/core");
 const { OpenAI } = require('openai');
 
 class OpenAIAgent {
@@ -59,7 +59,7 @@ class OpenAIAgent {
                         type: "function",
                         function: {
                             name: "addReviewCommentToFileLine",
-                            description: "Adds a review comment to a specific line in the pull request diff",
+                            description: "Adds a review comment to a SPECIFIC RANGE OF LINES in the pull request DIFF",
                             parameters: {
                                 type: "object",
                                 properties: {
@@ -67,9 +67,13 @@ class OpenAIAgent {
                                         type: "string",
                                         description: "The relative path to the file that necessitates a comment"
                                     },
-                                    lineNumber: {
+                                    startLineNumber: {
                                         type: "integer",
-                                        description: "The line number. The line of the blob in the pull request diff that the comment applies to. For a multi-line comment, the last line of the range that your comment applies to."
+                                        description: "The starting line number of the range."
+                                    },
+                                    endLineNumber: {
+                                        type: "integer",
+                                        description: "The ending line number of the range. For multi-line comments, this is the last line."
                                     },
                                     foundErrorDescription: {
                                         type: "string",
@@ -77,12 +81,12 @@ class OpenAIAgent {
                                     },
                                     side: {
                                         type: "string",
-                                        description: "In a split diff view, the side of the diff that the pull request's changes appear on. Can be LEFT for deletions or RIGHT for additions/unchanged lines",
+                                        description: "The side of the diff that the changes appear on (LEFT or RIGHT).",
                                         enum: ["LEFT", "RIGHT"],
                                         default: "RIGHT"
                                     }
                                 },
-                                required: ["fileName", "lineNumber", "foundErrorDescription"]
+                                required: ["fileName", "startLineNumber", "endLineNumber", "foundErrorDescription"]
                             }
                         }
                     },
@@ -131,13 +135,13 @@ class OpenAIAgent {
     }
 
     async addReviewCommentToFileLine(args) {
-        const { fileName, lineNumber, foundErrorDescription, side = "RIGHT" } = args;
+        const { fileName, startLineNumber, endLineNumber, foundErrorDescription, side = "RIGHT" } = args;
         try {
-            await this.fileCommentator(foundErrorDescription, fileName, side, lineNumber);
-            return "The review comment has been published.";
+            await this.fileCommentator(foundErrorDescription, fileName, side, startLineNumber, endLineNumber);
+            return "Success! The review comment has been published.";
         } catch (error) {
             this.handleError(error, 'Error creating review comment', false);
-            return `Error creating review comment: ${error.message}`;
+            return `Error! Please ensure that the lines you specify for the comment are part of the DIFF! Error message: ${error.message}`;
         }
     }
 
@@ -189,9 +193,12 @@ class OpenAIAgent {
         );
         const summary = await this.processRun(thread, run);
         const messages = await this.openai.beta.threads.messages.list(thread.id);
+        
+        info("info log, messages:");
         for (const message of messages.data.reverse()) {
-            warning(`${message.role} > ${message.content[0].text.value}`);
+            info(`[${message.role}]: ${message.content[0].text.value}`);
         }
+        
         return summary;
     }
 

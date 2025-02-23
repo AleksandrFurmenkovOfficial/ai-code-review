@@ -102,7 +102,7 @@ const main = async () => {
         const fileContentGetter = async (filePath) =>
             await githubAPI.getContent(owner, repo, filePath, headCommit);
 
-        const fileCommentator = async (comment, filePath, side, line) => {
+        const fileCommentator = async (comment, filePath, side, startLineNumber, endLineNumber) => {
             await githubAPI.createReviewComment(
                 owner,
                 repo,
@@ -111,7 +111,8 @@ const main = async () => {
                 comment,
                 filePath,
                 side,
-                line
+                endLineNumber,
+                startLineNumber
             );
         };
 

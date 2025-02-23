@@ -7,9 +7,9 @@ on:
 jobs:
   annotate-pr:
     runs-on: ubuntu-latest
-    name: Add AI comment with review for changes
+    name: AI code-review
     steps:
-      - name: AI review
+      - name: AI supremacy starts here
         uses: AleksandrFurmenkovOfficial/ai-code-review@version-1.1.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
