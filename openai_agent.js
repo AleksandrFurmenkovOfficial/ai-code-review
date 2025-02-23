@@ -44,11 +44,11 @@ class OpenAIAgent {
                                     },
                                     startLineNumber: {
                                         type: "integer",
-                                        description: "The starting line number."
+                                        description: "The starting line number from the diff hunk. Use the line number from the patch header (e.g., @@ -129,9 +129,9 @@)."
                                     },
                                     endLineNumber: {
                                         type: "integer",
-                                        description: "The ending line number."
+                                        description: "The ending line number from the diff hunk, ensuring it falls within the same hunk as the start line."
                                     }
                                 },
                                 required: ["pathToFile", "startLineNumber", "endLineNumber"]
@@ -69,11 +69,11 @@ class OpenAIAgent {
                                     },
                                     startLineNumber: {
                                         type: "integer",
-                                        description: "The starting line number of the range. Start line must precede the end line."
+                                        description: "The starting line number from the diff hunk where the comment should begin. Must be taken from the patch header (e.g., @@ -129,9 +129,9 @@) and precede the end line."
                                     },
                                     endLineNumber: {
                                         type: "integer",
-                                        description: "The ending line number of the range. For multi-line comments, this is the last line."
+                                        description: "The ending line number from the diff hunk where the comment should end, ensuring it is within the same diff range."
                                     },
                                     foundErrorDescription: {
                                         type: "string",
@@ -94,13 +94,13 @@ class OpenAIAgent {
                         type: "function",
                         function: {
                             name: "markAsDone",
-                            description: "Marks the code review as completed and provides a brief summary of changes.",
+                            description: "Marks the code review as completed and provides a brief summary of user's changes.",
                             parameters: {
                                 type: "object",
                                 properties: {
                                     briefSummary: {
                                         type: "string",
-                                        description: "A brief summary of changes made in the PR."
+                                        description: "A brief summary of user's changes. PLEASE! DRY! DO NOT REPEAT HERE YOUR COMMENTS. Just write a brief meaningful overview of user's changes."
                                     }
                                 },
                                 required: ["briefSummary"]
