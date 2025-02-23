@@ -69,7 +69,7 @@ class OpenAIAgent {
                                     },
                                     startLineNumber: {
                                         type: "integer",
-                                        description: "The starting line number of the range."
+                                        description: "The starting line number of the range. Start line must precede the end line."
                                     },
                                     endLineNumber: {
                                         type: "integer",
@@ -198,7 +198,7 @@ class OpenAIAgent {
         for (const message of messages.data.reverse()) {
             info(`[${message.role}]: ${message.content[0].text.value}`);
         }
-        
+
         return summary;
     }
 

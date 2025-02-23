@@ -129,9 +129,9 @@ class GitHubAPI {
      * @param {string} path - The relative path to the file that necessitates a comment..
      * @param {string} side - In a split diff view, the side of the diff that the pull request's changes appear on. Can be LEFT or RIGHT. Use LEFT for deletions that appear in red. Use RIGHT for additions that appear in green or unchanged lines that appear in white and are shown for context. For a multi-line comment, side represents whether the last line of the comment range is a deletion or addition. For more information, see "Diff view options" in the GitHub Help documentation.
      * @param {number} line - The line number. The line of the blob in the pull request diff that the comment applies to. For a multi-line comment, the last line of the range that your comment applies to.
-     * @param {number} start_line - The start line number. The first line of the range that your comment applies to.
+     * @param {number} start_line - The start line number. The first line of the range that your comment applies to. The start_line must precede the end line.
      */
-    async createReviewComment(owner, repo, pull_number, commit_id, body, path, side, line, start_line) {
+    async createReviewComment(owner, repo, pull_number, commit_id, body, path, side, start_line, line) {
         try {
             await this.octokit.rest.pulls.createReviewComment({
                 owner,
@@ -141,8 +141,8 @@ class GitHubAPI {
                 commit_id,
                 path,
                 side,
-                line,
-                start_line
+                start_line,
+                line
             });
         } catch (error) {
             this.handleError(error, 'Error creating review comment');

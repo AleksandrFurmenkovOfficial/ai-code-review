@@ -111,8 +111,8 @@ const main = async () => {
                 comment,
                 filePath,
                 side,
-                endLineNumber,
-                startLineNumber
+                startLineNumber,                
+                endLineNumber
             );
         };
 
