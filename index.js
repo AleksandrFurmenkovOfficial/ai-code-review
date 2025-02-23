@@ -82,6 +82,8 @@ const main = async () => {
                 headCommit
             );
         } else {
+            core.info(`lastReviewComment not found`);
+
             // First review - get all changes
             changedFiles = await githubAPI.listFiles(owner, repo, pullNumber);
         }
@@ -142,10 +144,10 @@ const main = async () => {
     } catch (error) {
         if (failAction) {
             core.error(error.stack);
-            core.setFailed(`Review failed: ${error.message}`);
+            core.setFailed(`Review failed, error: ${error.message}`);
         } else {
             core.debug(error.stack);
-            core.warning(`Warning: ${error.message}`);
+            core.warning(`Review failed, warning: ${error.message}`);
         }
     }
 };
