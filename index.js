@@ -13,7 +13,7 @@ const validateInputs = (repo, owner, pullNumber, githubToken, aiProvider, apiKey
 };
 
 const AI_REVIEW_COMMENT_PREFIX = "AI review done up to commit: ";
-const SUMMARY_SEPARATOR = "\n\n### Review Summary:\n";
+const SUMMARY_SEPARATOR = "\n\n### AI Review Summary(incremental):\n";
 
 const main = async () => {
     const getFilteredChangedFiles = (changedFiles, includeExtensions, excludeExtensions, includePaths, excludePaths) => {
