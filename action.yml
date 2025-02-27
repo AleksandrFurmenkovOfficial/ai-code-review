@@ -1,21 +1,28 @@
 name: 'AI Code Review'
-description: 'Perform code review using various AI models (OpenAI, Google, Anthropic, Deepseek)'
+description: 'Perform code review using various AI models (OpenAI, Anthropic, and soon Google, Deepseek)'
 
 inputs:
   token:
     description: 'GitHub token'
     required: true
   ai_provider:
-    description: 'AI provider to use (openai, google, anthropic, or deepseek)'
+    description: 'AI provider to use (openai, anthropic, and soon google, deepseek)'
     required: true
     default: 'openai'
   openai_api_key:
     description: 'OpenAI API key (required if using OpenAI provider)'
     required: false
   openai_model:
-    description: 'OpenAI model name (e.g., gpt-4o, o3-mini)'
+    description: 'OpenAI model name (e.g., gpt-4o)'
     required: false
     default: 'gpt-4o'
+  anthropic_api_key:
+    description: 'Anthropic API key (required if using Anthropic provider)'
+    required: false
+  anthropic_model:
+    description: 'Anthropic model name (e.g., claude-3-7-sonnet-20250219)'
+    required: false
+    default: 'claude-3-7-sonnet-latest'  
   google_api_key:
     description: 'Google AI API key (required if using Google provider)'
     required: false
@@ -23,13 +30,6 @@ inputs:
     description: 'Google model name (e.g., gemini-2.0-flash-thinking-exp-01-21)'
     required: false
     default: 'gemini-2.0-flash-thinking-exp-01-21'
-  anthropic_api_key:
-    description: 'Anthropic API key (required if using Anthropic provider)'
-    required: false
-  anthropic_model:
-    description: 'Anthropic model name (e.g., claude-3-5-sonnet-20241022)'
-    required: false
-    default: 'claude-3-5-sonnet-20241022'
   deepseek_api_key:
     description: 'Deepseek API key (required if using Deepseek provider)'
     required: false
@@ -66,4 +66,4 @@ inputs:
 runs:
   using: 'node20'
   pre: 'setup.js'
-  main: 'index.js'
+  main: 'src/index.js'
