@@ -10,7 +10,7 @@ jobs:
     name: AI code-review
     steps:
       - name: AI supremacy starts here
-        uses: AleksandrFurmenkovOfficial/ai-code-review@v0.5
+        uses: AleksandrFurmenkovOfficial/ai-code-review@main
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           # AI Provider Configuration
