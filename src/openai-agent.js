@@ -1,12 +1,20 @@
+const core = require("@actions/core");
 const { OpenAI } = require('openai');
 const BaseAIAgent = require("./base-ai-agent");
 
-const c_max_completion_tokens = 8192;
-
 class OpenAIAgent extends BaseAIAgent {
-    constructor(apiKey, fileContentGetter, fileCommentator, model) {
+    constructor(apiKey, fileContentGetter, fileCommentator, model, baseURL = null) {
         super(apiKey, fileContentGetter, fileCommentator, model);
-        this.openai = new OpenAI({ apiKey });
+
+        if (baseURL == null || baseURL === undefined || baseURL.trim() === '' ) {
+            core.info("Using default OpenAI API URL");
+            this.openai = new OpenAI({ apiKey});
+        }
+        else {
+            core.info(`Using custom baseUrl: ${baseURL}`);
+            this.openai = new OpenAI({ apiKey : apiKey, baseURL : baseURL});
+        }
+
         this.tools = [
             {
                 type: "function",
@@ -128,14 +136,23 @@ class OpenAIAgent extends BaseAIAgent {
             }
 
             // Proceed to the next API call
-            const nextResponse = await this.openai.chat.completions.create({
-                model: this.model,
-                messages: [{ role: 'system', content: this.getSystemPrompt() }, ...reviewState.messageHistory],
-                tools: this.tools,
-                max_completion_tokens: c_max_completion_tokens
-            });
-            const nextMessage = nextResponse.choices[0].message;
-            return await this.handleMessageResponse(nextMessage, reviewState);
+            try {
+                core.info(`Sending follow-up request to OpenAI with model: ${this.model}`);
+                const nextResponse = await this.openai.chat.completions.create({
+                    model: this.model,
+                    messages: [{ role: 'system', content: this.getSystemPrompt() }, ...reviewState.messageHistory],
+                    tools: this.tools
+                });
+                const nextMessage = nextResponse.choices[0].message;
+                return await this.handleMessageResponse(nextMessage, reviewState);
+            } catch (error) {
+                core.error(`OpenAI API error in follow-up request: ${error.message}`);
+                if (error.response) {
+                    core.error(`Status: ${error.response.status}`);
+                    core.error(`Data: ${JSON.stringify(error.response.data)}`);
+                }
+                throw error;
+            }
         } else {
             if (message.content && !reviewState.summary) {
                 reviewState.summary = message.content;
@@ -173,15 +190,24 @@ class OpenAIAgent extends BaseAIAgent {
 
         reviewState.messageHistory.push(initialUserMessage);
 
-        const initialResponse = await this.openai.chat.completions.create({
-            model: this.model,
-            messages: [{ role: 'system', content: this.getSystemPrompt() }, ...reviewState.messageHistory],
-            tools: this.tools,
-            max_completion_tokens: c_max_completion_tokens
-        });
-        const initialMessage = initialResponse.choices[0].message;
-        reviewSummary = await this.handleMessageResponse(initialMessage, reviewState);
-        return reviewSummary;
+        try {
+            core.info(`Sending initial request to OpenAI with model: ${this.model}`);
+            const initialResponse = await this.openai.chat.completions.create({
+                model: this.model,
+                messages: [{ role: 'system', content: this.getSystemPrompt() }, ...reviewState.messageHistory],
+                tools: this.tools
+            });
+            const initialMessage = initialResponse.choices[0].message;
+            reviewSummary = await this.handleMessageResponse(initialMessage, reviewState);
+            return reviewSummary;
+        } catch (error) {
+            core.error(`OpenAI API error: ${error.message}`);
+            if (error.response) {
+                core.error(`Status: ${error.response.status}`);
+                core.error(`Data: ${JSON.stringify(error.response.data)}`);
+            }
+            throw error;
+        }
     }
 
     async getFileContent(args) {

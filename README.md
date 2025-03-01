@@ -3,7 +3,7 @@
 
 ## Description
 
-Perform code review using various AI models (from OpenAI, Anthropic, and soon Google, Deepseek) to analyze and provide feedback on your code. This GitHub Action helps improve the code quality by automatically reviewing pull requests, focusing on specified file extensions, and excluding specific paths.
+Perform code review using various AI models from OpenAI, Anthropic, Google, Deepseek(soon) to analyze and provide feedback on your code. This GitHub Action helps improve the code quality by automatically reviewing pull requests, focusing on specified file extensions, and excluding specific paths.
 
 ## Inputs
 
@@ -15,7 +15,7 @@ Perform code review using various AI models (from OpenAI, Anthropic, and soon Go
 
 ***pr_number*** - Required. The number of the pull request that needs to be reviewed.
 
-***ai_provider*** - Required. The AI provider to use (openai, anthropic, and soon google, deepseek). Default is 'openai'.
+***ai_provider*** - Required. The AI provider to use { openai, anthropic, google, deepseek(soon)}. Default is 'openai'.
 
 
 ***openai_api_key*** - Required if using OpenAI provider. This key is necessary to access OpenAI's API for code review purposes.
@@ -30,7 +30,7 @@ Perform code review using various AI models (from OpenAI, Anthropic, and soon Go
 
 ***google_api_key*** - Required if using Google provider. This key is necessary to access Google's API for code review purposes.
 
-***google_model*** - Optional. The Google model name (e.g., gemini-2.0-flash-thinking-exp-01-21). Default is 'gemini-2.0-flash-thinking-exp-01-21'.
+***google_model*** - Optional. The Google model name (e.g., gemini-2.0-flash). Default is 'gemini-2.0-flash'.
 
 
 ***deepseek_api_key*** - Required if using Deepseek provider. This key is necessary to access Deepseek's API for code review purposes.
@@ -66,7 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: AI Code Review
-      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.6
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.7
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         owner: ${{ github.repository_owner }}
@@ -92,7 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: AI Code Review
-      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.6
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.7
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         owner: ${{ github.repository_owner }}
@@ -118,7 +118,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: AI Code Review
-      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.6
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.7
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         owner: ${{ github.repository_owner }}
@@ -135,7 +135,7 @@ jobs:
         fail_action_if_review_failed: 'true'
 ```
 
-### Google Example (soon or suggest your PR to include)
+### Google Example
 
 ```yaml
 name: AI Code Review with Google
@@ -149,7 +149,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: AI Code Review
-      uses: AleksandrFurmenkovOfficial/ai-code-review@main
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.7
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         owner: ${{ github.repository_owner }}
@@ -158,7 +158,7 @@ jobs:
         
         ai_provider: 'google'
         google_api_key: ${{ secrets.GOOGLE_API_KEY }}
-        google_model: 'gemini-2.0-flash-thinking-exp-01-21'
+        google_model: 'gemini-2.0-flash'
 ```
 
 ### Deepseek Example (soon or suggest your PR to include)
