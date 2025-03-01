@@ -1,6 +1,6 @@
 {
   "name": "ai-code-review",
-  "version": "1.1.0",
+  "version": "0.7.0",
   "description": "AI Code Review is a GitHub Action that integrates various AI models (OpenAI, Google, Anthropic, Deepseek) into your code review process, providing automated feedback on pull requests. Improve your code quality and streamline your development workflow with this powerful and customizable AI-driven code review tool.",
   "main": "index.js",
   "scripts": {

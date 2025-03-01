@@ -13,22 +13,23 @@ jobs:
         uses: AleksandrFurmenkovOfficial/ai-code-review@main
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          
           # AI Provider Configuration
-          ai_provider: 'openai'  # Can be 'openai', 'anthropic', ('google', or 'deepseek') soon
+          ai_provider: 'google'  # Can be 'openai', 'anthropic', 'google', ('deepseek' soon)
 
           # Anthropic Configuration (if using Anthropic)
           # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          # anthropic_model: 'claude-3-7-sonnet-20250219'  # Optional
+          # anthropic_model: 'claude-3-7-sonnet-20250219'  # Optional, defaults to 'claude-3-7-sonnet-latest'
           
           # OpenAI Configuration (if using OpenAI)
-          openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+          # openai_api_key: ${{ secrets.OPENAI_API_KEY }}
           # openai_model: 'gpt-4o'  # Optional, defaults to 'gpt-4o'
           
           # Google Configuration (if using Google)
-          # google_api_key: ${{ secrets.GOOGLE_API_KEY }}
-          # google_model: 'gemini-2.0-flash-thinking-exp-01-21'  # Optional
+          google_api_key: ${{ secrets.GOOGLE_API_KEY }}
+          google_model: 'gemini-2.0-flash' # Optional, defaults to 'gemini-2.0-flash'
           
-          # Deepseek Configuration (if using Deepseek)
+          # Soon - Deepseek Configuration (if using Deepseek)
           # deepseek_api_key: ${{ secrets.DEEPSEEK_API_KEY }}
           # deepseek_model: 'deepseek-reasoner'  # Optional
           
