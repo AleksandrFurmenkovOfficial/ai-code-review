@@ -40,7 +40,7 @@
   "dependencies": {
     "@actions/core": "^1.11.1",
     "@actions/github": "^6.0.0",
-    "@anthropic-ai/sdk": "^0.37.0",
+    "@anthropic-ai/sdk": "^0.39.0",
     "@google/generative-ai": "^0.22.0",
     "openai": "^4.85.4"
   }
