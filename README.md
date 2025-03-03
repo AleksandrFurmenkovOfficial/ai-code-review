@@ -3,7 +3,7 @@
 
 ## Description
 
-Perform code review using various AI models from OpenAI, Anthropic, Google, Deepseek(soon) to analyze and provide feedback on your code. This GitHub Action helps improve the code quality by automatically reviewing pull requests, focusing on specified file extensions, and excluding specific paths.
+Perform code review using various AI models from OpenAI, Anthropic, Google or Deepseek to analyze and provide feedback on your code. This GitHub Action helps improve the code quality by automatically reviewing pull requests, focusing on specified file extensions, and excluding specific paths.
 
 ## Inputs
 
@@ -15,7 +15,7 @@ Perform code review using various AI models from OpenAI, Anthropic, Google, Deep
 
 ***pr_number*** - Required. The number of the pull request that needs to be reviewed.
 
-***ai_provider*** - Required. The AI provider to use { openai, anthropic, google, deepseek(soon)}. Default is 'openai'.
+***ai_provider*** - Required. The AI provider to use { openai, anthropic, google, deepseek}. Default is 'openai'.
 
 
 ***openai_api_key*** - Required if using OpenAI provider. This key is necessary to access OpenAI's API for code review purposes.
@@ -35,7 +35,7 @@ Perform code review using various AI models from OpenAI, Anthropic, Google, Deep
 
 ***deepseek_api_key*** - Required if using Deepseek provider. This key is necessary to access Deepseek's API for code review purposes.
 
-***deepseek_model*** - Optional. The Deepseek model name (e.g., deepseek-reasoner). Default is 'deepseek-reasoner'.
+***deepseek_model*** - Optional. The Deepseek model name (e.g., deepseek-chat). Default is 'deepseek-chat'.
 
 
 ***include_extensions*** - Optional. A comma-separated list of file extensions to include in the review (e.g., ".py,.js,.html"). If not specified, the action will consider all file types.
@@ -66,7 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: AI Code Review
-      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.7
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.8
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         owner: ${{ github.repository_owner }}
@@ -92,7 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: AI Code Review
-      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.7
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.8
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         owner: ${{ github.repository_owner }}
@@ -102,37 +102,6 @@ jobs:
         ai_provider: 'anthropic'
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
         anthropic_model: 'claude-3-7-sonnet-20250219'
-```
-
-### Advanced Configuration Example
-
-```yaml
-name: AI Code Review with Advanced Settings
-
-on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-
-jobs:
-  ai_code_review:
-    runs-on: ubuntu-latest
-    steps:
-    - name: AI Code Review
-      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.7
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        owner: ${{ github.repository_owner }}
-        repo: ${{ github.event.repository.name }}
-        pr_number: ${{ github.event.number }}
-
-        ai_provider: 'openai'
-        openai_api_key: ${{ secrets.OPENAI_API_KEY }}
-        
-        include_extensions: '.py,.js,.tsx'
-        exclude_extensions: '.test.js'
-        include_paths: 'src/,app/'
-        exclude_paths: 'test/,docs/'
-        fail_action_if_review_failed: 'true'
 ```
 
 ### Google Example
@@ -149,7 +118,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: AI Code Review
-      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.7
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.8
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         owner: ${{ github.repository_owner }}
@@ -161,7 +130,7 @@ jobs:
         google_model: 'gemini-2.0-flash'
 ```
 
-### Deepseek Example (soon or suggest your PR to include)
+### Deepseek Example
 
 ```yaml
 name: AI Code Review with Deepseek
@@ -175,7 +144,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: AI Code Review
-      uses: AleksandrFurmenkovOfficial/ai-code-review@main
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.8
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         owner: ${{ github.repository_owner }}
@@ -184,7 +153,38 @@ jobs:
         
         ai_provider: 'deepseek'
         deepseek_api_key: ${{ secrets.DEEPSEEK_API_KEY }}
-        deepseek_model: 'deepseek-reasoner'
+        deepseek_model: 'deepseek-chat'
+```
+
+### Advanced Configuration Example
+
+```yaml
+name: AI Code Review with Advanced Settings
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  ai_code_review:
+    runs-on: ubuntu-latest
+    steps:
+    - name: AI Code Review
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.8
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        owner: ${{ github.repository_owner }}
+        repo: ${{ github.event.repository.name }}
+        pr_number: ${{ github.event.number }}
+
+        ai_provider: 'openai'
+        openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+        
+        include_extensions: '.py,.js,.tsx'
+        exclude_extensions: '.test.js'
+        include_paths: 'src/,app/'
+        exclude_paths: 'test/,docs/'
+        fail_action_if_review_failed: 'true'
 ```
 
 ## Troubleshooting
