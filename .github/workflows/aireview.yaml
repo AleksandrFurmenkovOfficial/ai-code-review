@@ -15,7 +15,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           
           # AI Provider Configuration
-          ai_provider: 'google'  # Can be 'openai', 'anthropic', 'google', ('deepseek' soon)
+          ai_provider: 'deepseek'  # Can be 'openai', 'anthropic', 'google', 'deepseek'
 
           # Anthropic Configuration (if using Anthropic)
           # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -30,8 +30,8 @@ jobs:
           google_model: 'gemini-2.0-flash' # Optional, defaults to 'gemini-2.0-flash'
           
           # Soon - Deepseek Configuration (if using Deepseek)
-          # deepseek_api_key: ${{ secrets.DEEPSEEK_API_KEY }}
-          # deepseek_model: 'deepseek-reasoner'  # Optional
+          deepseek_api_key: ${{ secrets.DEEPSEEK_API_KEY }}
+          deepseek_model: 'deepseek-chat'  # Optional
           
           # Repository Configuration
           owner: ${{ github.repository_owner }}
