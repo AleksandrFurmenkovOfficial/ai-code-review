@@ -1,5 +1,8 @@
 name: 'AI Code Review'
 description: 'Perform code review using various AI models from OpenAI, Anthropic, Google or Deepseek'
+branding:
+  icon: 'book-open'
+  color: 'yellow'
 
 inputs:
   token:
