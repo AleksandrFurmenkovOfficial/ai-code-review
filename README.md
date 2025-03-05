@@ -5,49 +5,6 @@
 
 Perform code review using various AI models from OpenAI, Anthropic, Google or Deepseek to analyze and provide feedback on your code. This GitHub Action helps improve the code quality by automatically reviewing pull requests, focusing on specified file extensions, and excluding specific paths.
 
-## Inputs
-
-***token*** - Required. This GitHub token is used for authentication and to access your GitHub repository.
-
-***owner*** - Required. The username of the repository owner.
-
-***repo*** - Required. The name of the repository.
-
-***pr_number*** - Required. The number of the pull request that needs to be reviewed.
-
-***ai_provider*** - Required. The AI provider to use { openai, anthropic, google, deepseek}. Default is 'openai'.
-
-
-***openai_api_key*** - Required if using OpenAI provider. This key is necessary to access OpenAI's API for code review purposes.
-
-***openai_model*** - Optional. The OpenAI model name (e.g., gpt-4o). Default is 'gpt-4o'.
-
-
-***anthropic_api_key*** - Required if using Anthropic provider. This key is necessary to access Anthropic's API for code review purposes.
-
-***anthropic_model*** - Optional. The Anthropic model name (e.g., claude-3-7-sonnet-20250219). Default is 'claude-3-7-sonnet-latest'.
-
-
-***google_api_key*** - Required if using Google provider. This key is necessary to access Google's API for code review purposes.
-
-***google_model*** - Optional. The Google model name (e.g., gemini-2.0-flash). Default is 'gemini-2.0-flash'.
-
-
-***deepseek_api_key*** - Required if using Deepseek provider. This key is necessary to access Deepseek's API for code review purposes.
-
-***deepseek_model*** - Optional. The Deepseek model name (e.g., deepseek-chat). Default is 'deepseek-chat'.
-
-
-***include_extensions*** - Optional. A comma-separated list of file extensions to include in the review (e.g., ".py,.js,.html"). If not specified, the action will consider all file types.
-
-***exclude_extensions*** - Optional. A comma-separated list of file extensions to exclude from the review.
-
-***include_paths*** - Optional. A comma-separated list of directory paths to include in the review.
-
-***exclude_paths*** - Optional. A comma-separated list of directory paths to exclude from the review (e.g., "test/,docs/"). If not specified, the action will consider all paths.
-
-***fail_action_if_review_failed*** - Optional. If set to true, the action fails when the review process fails. Default is 'false'.
-
 ## Usage Examples
 
 Create a new `.github/workflows/ai-code-review.yml` file in your GitHub repository. Below are examples for different AI providers:
@@ -186,6 +143,49 @@ jobs:
         exclude_paths: 'test/,docs/'
         fail_action_if_review_failed: 'true'
 ```
+
+## Inputs
+
+***token*** - Required. This GitHub token is used for authentication and to access your GitHub repository.
+
+***owner*** - Required. The username of the repository owner.
+
+***repo*** - Required. The name of the repository.
+
+***pr_number*** - Required. The number of the pull request that needs to be reviewed.
+
+***ai_provider*** - Required. The AI provider to use { openai, anthropic, google, deepseek}. Default is 'openai'.
+
+
+***openai_api_key*** - Required if using OpenAI provider. This key is necessary to access OpenAI's API for code review purposes.
+
+***openai_model*** - Optional. The OpenAI model name (e.g., gpt-4o). Default is 'gpt-4o'.
+
+
+***anthropic_api_key*** - Required if using Anthropic provider. This key is necessary to access Anthropic's API for code review purposes.
+
+***anthropic_model*** - Optional. The Anthropic model name (e.g., claude-3-7-sonnet-20250219). Default is 'claude-3-7-sonnet-latest'.
+
+
+***google_api_key*** - Required if using Google provider. This key is necessary to access Google's API for code review purposes.
+
+***google_model*** - Optional. The Google model name (e.g., gemini-2.0-flash). Default is 'gemini-2.0-flash'.
+
+
+***deepseek_api_key*** - Required if using Deepseek provider. This key is necessary to access Deepseek's API for code review purposes.
+
+***deepseek_model*** - Optional. The Deepseek model name (e.g., deepseek-chat). Default is 'deepseek-chat'.
+
+
+***include_extensions*** - Optional. A comma-separated list of file extensions to include in the review (e.g., ".py,.js,.html"). If not specified, the action will consider all file types.
+
+***exclude_extensions*** - Optional. A comma-separated list of file extensions to exclude from the review.
+
+***include_paths*** - Optional. A comma-separated list of directory paths to include in the review.
+
+***exclude_paths*** - Optional. A comma-separated list of directory paths to exclude from the review (e.g., "test/,docs/"). If not specified, the action will consider all paths.
+
+***fail_action_if_review_failed*** - Optional. If set to true, the action fails when the review process fails. Default is 'false'.
 
 ## Troubleshooting
 
