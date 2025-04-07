@@ -42,6 +42,6 @@
     "@actions/github": "^6.0.0",
     "@anthropic-ai/sdk": "^0.39.0",
     "@google/generative-ai": "^0.24.0",
-    "openai": "^4.86.1"
+    "openai": "^4.91.1"
   }
 }
