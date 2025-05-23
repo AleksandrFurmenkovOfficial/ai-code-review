@@ -12,6 +12,13 @@ inputs:
     description: 'AI provider to use (openai, anthropic, google or deepseek)'
     required: true
     default: 'openai'
+  openrouter_api_key:
+    description: 'OpenRouter API key (required if using OpenRouter provider)'
+    required: false
+  openrouter_model:
+    description: 'OpenRouter model name (e.g., meta-llama/llama-3.3-8b-instruct:free)'
+    required: false
+    default: 'meta-llama/llama-3.3-8b-instruct:free'
   openai_api_key:
     description: 'OpenAI API key (required if using OpenAI provider)'
     required: false

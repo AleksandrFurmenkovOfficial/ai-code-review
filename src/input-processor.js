@@ -4,6 +4,7 @@ const OpenAIAgent = require("./openai-agent.js");
 const AnthropicAgent = require("./anthropic-agent.js");
 const GoogleAgent = require("./google-agent.js");
 const DeepseekAgent = require("./deepseek-agent.js");
+const OpenRouterAgent = require("./openrouter-agent.js")
 
 const { AI_REVIEW_COMMENT_PREFIX, SUMMARY_SEPARATOR } = require('./constants');
 
@@ -93,7 +94,7 @@ class InputProcessor {
         if (!this._aiProvider) throw new Error("AI provider is required.");
         if (!this._apiKey) throw new Error(`${this._aiProvider} API key is required.`);
         
-        const supportedProviders = ['openai', 'anthropic', 'google', 'deepseek'];
+        const supportedProviders = ['openai', 'anthropic', 'google', 'deepseek', 'openrouter'];
         if (!supportedProviders.includes(this._aiProvider)) {
             throw new Error(`Unsupported AI provider: ${this._aiProvider}. Supported providers: ${supportedProviders.join(', ')}`);
         }
@@ -221,6 +222,9 @@ class InputProcessor {
                 break;
             case 'deepseek':
                 aiAgent = new DeepseekAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model);
+                break;
+            case 'openrouter':
+                aiAgent = new OpenRouterAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model);
                 break;
             default:
                 throw new Error(`Unsupported AI provider: ${this._aiProvider}`);
