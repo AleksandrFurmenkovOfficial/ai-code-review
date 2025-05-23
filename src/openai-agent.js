@@ -3,8 +3,13 @@ const { OpenAI } = require('openai');
 const BaseAIAgent = require("./base-ai-agent");
 
 class OpenAIAgent extends BaseAIAgent {
-    constructor(apiKey, fileContentGetter, fileCommentator, model, baseURL = null) {
+    constructor(apiKey, fileContentGetter, fileCommentator, model, baseURL = null, githubAPI, owner, repo, prHeadBranch) {
         super(apiKey, fileContentGetter, fileCommentator, model);
+
+        this.githubAPI = githubAPI;
+        this.owner = owner;
+        this.repo = repo;
+        this.prHeadBranch = prHeadBranch;
 
         if (baseURL == null || baseURL === undefined || baseURL.trim() === '' ) {
             core.info("Using default OpenAI API URL");
@@ -36,7 +41,7 @@ class OpenAIAgent extends BaseAIAgent {
                 type: "function",
                 function: {
                     name: "add_review_comment",
-                    description: "Adds a review comment to a specific range of lines in the pull request diff",
+                    description: "Adds a review comment to a specific range of lines in the pull request diff. To suggest a specific code change for a line or range of lines, format the 'found_error_description' using GitHub's suggestion markdown: ```suggestion\\n[your new code]\\n```. Ensure the line numbers correctly target the area for the suggestion.",
                     parameters: {
                         type: "object",
                         properties: {
@@ -61,6 +66,22 @@ class OpenAIAgent extends BaseAIAgent {
                             brief_summary: { type: "string", description: "A brief summary of the changes reviewed. Do not repeat comments. Focus on overall quality and any patterns observed." }
                         },
                         required: ["brief_summary"]
+                    }
+                }
+            },
+            {
+                type: "function",
+                function: {
+                    name: "edit_file",
+                    description: "Edits an existing file by replacing its entire content. This creates a new commit on the pull request's current branch. Use this for significant revisions where a targeted suggestion isn't practical. Provide a concise and descriptive commit_message.",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            file_path: { type: "string", description: "The relative path (from the repository root) to the file to be edited." },
+                            new_content: { type: "string", description: "The full new content of the file." },
+                            commit_message: { type: "string", description: "The commit message for this change." }
+                        },
+                        required: ["file_path", "new_content", "commit_message"]
                     }
                 }
             }
@@ -105,6 +126,10 @@ class OpenAIAgent extends BaseAIAgent {
                         toolResponse = await this.addReviewComment(file_name, start_line_number, end_line_number, found_error_description, side);
                         reviewState.reviewedFiles.add(file_name);
                         reviewState.commentsMade++;
+                    } else if (toolCall.function.name === 'edit_file') {
+                        toolResponse = await this.handleEditFile(input);
+                        reviewState.editedFiles = reviewState.editedFiles || new Set();
+                        reviewState.editedFiles.add(input.file_path);
                     } else if (toolCall.function.name === 'mark_as_done') {
                         reviewState.summary = input.brief_summary;
                         return null; // No need to add tool response for mark_as_done
@@ -175,6 +200,7 @@ class OpenAIAgent extends BaseAIAgent {
         const reviewState = {
             summary: '',
             reviewedFiles: new Set(),
+            editedFiles: new Set(), // Initialize editedFiles
             commentsMade: 0,
             maxIterations: 142, // Prevent infinite loops
             iterationCount: 0,
@@ -218,6 +244,31 @@ class OpenAIAgent extends BaseAIAgent {
     async addReviewCommentToFileLine(args) {
         const { fileName, startLineNumber, endLineNumber, foundErrorDescription, side = "RIGHT" } = args;
         return await this.addReviewComment(fileName, startLineNumber, endLineNumber, foundErrorDescription, side);
+    }
+
+    async handleEditFile(args) {
+        const { file_path, new_content, commit_message } = args;
+        if (!this.githubAPI || !this.owner || !this.repo || !this.prHeadBranch) {
+            throw new Error("GitHub API details and repository context are not available for editing files.");
+        }
+        try {
+            core.info(`Attempting to edit file: ${file_path} in branch ${this.prHeadBranch}`);
+            const currentFileSha = await this.githubAPI.getFileSHA(this.owner, this.repo, this.prHeadBranch, file_path);
+
+            await this.githubAPI.createOrUpdateFile(
+                this.owner,
+                this.repo,
+                this.prHeadBranch,
+                file_path,
+                new_content,
+                currentFileSha, // Pass null if file is new, createOrUpdateFileContents handles this
+                commit_message
+            );
+            return `Successfully edited file: ${file_path} and committed with message: "${commit_message}"`;
+        } catch (error) {
+            core.error(`Error editing file ${file_path}: ${error.message}`);
+            throw new Error(`Failed to edit file ${file_path}: ${error.message}`);
+        }
     }
 }
 

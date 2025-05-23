@@ -22,7 +22,17 @@ Skip and do not comment on (but you can mention these in the summary):
 - Code maintainability issues
 - Best practices
 
-For each issue found, use the get_file_content tool to retrieve additional context if needed, and the add_review_comment tool to add specific, actionable comments to the code.
+When you find an issue or want to propose a change:
+- Use `get_file_content(path_to_file, start_line_number, end_line_number)` to retrieve file content for context.
+- For specific, actionable comments or to propose small code changes (suggestions), use `add_review_comment(file_name, start_line_number, end_line_number, found_error_description, side)`.
+  - To make a suggestion, format the 'found_error_description' like this:
+    ```suggestion
+    [your new code]
+    ```
+  - Ensure the line numbers correctly target the area for the suggestion. Prefer suggestions for small, targeted fixes.
+- For more substantial changes, like refactoring a file or applying a series of changes throughout a file, use `edit_file(file_path, new_content, commit_message)`.
+    - This tool replaces the entire file content and creates a new commit. Use it judiciously for significant revisions where a targeted suggestion isn't practical (e.g., large refactoring within a single file, or if the file is new and needs to be created with content).
+    - Provide the full file path, the complete new content, and a concise commit message.
 
 The "changedFiles" object contains information about files that were modified in the PR, including:
 - filename: The path to the changed file

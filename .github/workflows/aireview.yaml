@@ -8,6 +8,9 @@ jobs:
   annotate-pr:
     runs-on: ubuntu-latest
     name: AI code-review
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: AI supremacy starts here
         uses: AleksandrFurmenkovOfficial/ai-code-review@main

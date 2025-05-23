@@ -241,6 +241,75 @@ class GitHubAPI {
         });
         return comparison.files || [];
     }
+
+    /**
+     * Retrieves the blob SHA of a file.
+     * @param {string} owner - The repository owner.
+     * @param {string} repo - The repository name.
+     * @param {string} ref - The reference (branch, commit SHA) to the file.
+     * @param {string} filePath - The file path.
+     * @returns {Promise<string|null>} The blob SHA of the file, or null if the file doesn't exist or the path is a directory.
+     */
+    async getFileSHA(owner, repo, ref, filePath) {
+        core.info(`getFileSHA(${ref}, ${filePath})`);
+        try {
+            const { data: fileMetadata } = await this.octokit.rest.repos.getContent({
+                owner,
+                repo,
+                path: filePath,
+                ref: ref,
+            });
+
+            if (Array.isArray(fileMetadata) || fileMetadata.type !== 'file') {
+                core.warning(`Path ${filePath} is a directory or not a file.`);
+                return null;
+            }
+
+            return fileMetadata.sha;
+        } catch (error) {
+            if (error.status === 404) {
+                core.warning(`File ${filePath} not found at ref ${ref}.`);
+                return null;
+            }
+            core.error(`Error getting file SHA for ${filePath}: ${error.message}`);
+            throw error;
+        }
+    }
+
+    /**
+     * Creates a new file or updates an existing one in a repository.
+     * @param {string} owner - The repository owner.
+     * @param {string} repo - The repository name.
+     * @param {string} branchName - The branch name.
+     * @param {string} filePath - The path to the file.
+     * @param {string} content - The new content of the file.
+     * @param {string} [currentFileSha] - The blob SHA of the file if it exists and is being updated. Omit for new files.
+     * @param {string} commitMessage - The commit message.
+     * @returns {Promise<Object>} The response from the API call.
+     */
+    async createOrUpdateFile(owner, repo, branchName, filePath, content, currentFileSha, commitMessage) {
+        core.info(`createOrUpdateFile(${branchName}, ${filePath})`);
+        try {
+            const params = {
+                owner,
+                repo,
+                path: filePath,
+                message: commitMessage,
+                content: Buffer.from(content).toString('base64'),
+                branch: branchName,
+            };
+
+            if (currentFileSha) {
+                params.sha = currentFileSha;
+            }
+
+            const { data: response } = await this.octokit.rest.repos.createOrUpdateFileContents(params);
+            return response;
+        } catch (error) {
+            core.error(`Error creating or updating file ${filePath}: ${error.message}`);
+            throw error;
+        }
+    }
 }
 
 module.exports = GitHubAPI;

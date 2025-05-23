@@ -21,6 +21,7 @@ class InputProcessor {
         this._githubAPI = null;
         this._baseCommit = null;
         this._headCommit = null;
+        this._headRef = null; // New instance variable
         this._filteredDiffs = [];
         this._fileContentGetter = null;
         this._fileCommentator = null;
@@ -105,6 +106,7 @@ class InputProcessor {
         const pullRequestData = await this._githubAPI.getPullRequest(this._owner, this._repo, this._pullNumber);
         this._headCommit = pullRequestData.head.sha;
         this._baseCommit = pullRequestData.base.sha;
+        this._headRef = pullRequestData.head.ref; // Store head branch reference
     }
     
     async _processChangedFiles() {
@@ -212,7 +214,7 @@ class InputProcessor {
         
         switch (this._aiProvider) {
             case 'openai':
-                aiAgent = new OpenAIAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model);
+                aiAgent = new OpenAIAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model, null, this._githubAPI, this._owner, this._repo, this._headRef);
                 break;
             case 'anthropic':
                 aiAgent = new AnthropicAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model);
@@ -224,7 +226,7 @@ class InputProcessor {
                 aiAgent = new DeepseekAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model);
                 break;
             case 'openrouter':
-                aiAgent = new OpenRouterAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model);
+                aiAgent = new OpenRouterAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model, this._githubAPI, this._owner, this._repo, this._headRef);
                 break;
             default:
                 throw new Error(`Unsupported AI provider: ${this._aiProvider}`);
