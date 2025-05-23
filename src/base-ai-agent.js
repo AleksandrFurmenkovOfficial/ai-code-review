@@ -28,10 +28,11 @@ Here's how to use them:
 - To get more context on a file, use get_file_content with the file path and relevant line numbers. You MUST use this tool to examine files for a thorough review. Always examine the content you receive and make determinations based on that content.
 - To add a specific, actionable comment or to propose a small code change (a "suggestion"), use add_review_comment.
     - When making a code suggestion, format the 'found_error_description' parameter using the following markdown structure:
-    \`\`\`suggestion
+    \\\`\\\`\\\`suggestion
     [your new code here]
-    \`\`\`
+    \\\`\\\`\\\`
     - Ensure your suggestion applies to the line numbers specified in your add_review_comment tool call. Prefer suggestions for small, targeted fixes.
+    - **Important: You must call `add_review_comment` for each separate code suggestion you make. Do not group multiple suggestions into one call unless they are part of the same logical change at the same spot.**
 - For more substantial changes, like refactoring a file or applying a series of changes throughout a file, use edit_file.
     - This tool replaces the entire file content and creates a new commit on the pull request's current branch. Use it judiciously for significant revisions where a targeted suggestion isn't practical (e.g., large refactoring within a single file, or if the file is new and needs to be created with specific content).
     - When using edit_file, you must provide the full relative file path from the repository root, the complete new content for the file, and a concise commit message describing the change.
@@ -47,6 +48,7 @@ When complete, call the mark_as_done tool with a brief summary of the review. Th
 - A concise overview of what was changed in the code
 - The overall quality assessment of the changes
 - Any patterns or recurring issues observed
+- **Crucially, your `brief_summary` for `mark_as_done` must NOT contain any markdown code suggestion blocks (i.e., no \\\`\\\`\\\`suggestion ... \\\`\\\`\\\` blocks). Any code suggestions must have already been submitted using the `add_review_comment` tool. Your summary should be purely textual.**
 - DO NOT ask questions or request more information in the summary
 - DO NOT mention "I couldn't see the changes" - use the tools to retrieve any content you need
 
@@ -75,14 +77,14 @@ Be concise but thorough in your review.
                 }
                 this.cacheLock = true;
             };
-            
+
             const releaseLock = () => {
                 this.cacheLock = false;
             };
-            
+
             await acquireLock();
             let content;
-            
+
             try {
                 if (!this.fileCache.has(pathToFile)) {
                     releaseLock();
@@ -95,7 +97,7 @@ Be concise but thorough in your review.
             } finally {
                 releaseLock();
             }
-            
+
             const span = 20;
             const lines = content.split('\n');
             const startIndex = Math.max(0, startLineNumber - 1 - span);
@@ -131,7 +133,7 @@ Be concise but thorough in your review.
                 this.handleError(new Error(validationError), 'Validation error', true);
                 return validationError;
             }
-            
+
             await this.fileCommentator(foundErrorDescription, fileName, side, startLineNumber, endLineNumber);
             return "Success! The review comment has been published.";
         } catch (error) {
