@@ -17,9 +17,14 @@ jobs:
         uses: AleksandrFurmenkovOfficial/ai-code-review@main
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          
+  
+          # Repository Configuration
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
+          pr_number: ${{ github.event.number }}
+
           # AI Provider Configuration
-          ai_provider: 'deepseek'  # Can be 'openai', 'anthropic', 'google', 'deepseek'
+          ai_provider: 'google'  # Can be 'openai', 'anthropic', 'google', 'deepseek'
 
           # Anthropic Configuration (if using Anthropic)
           # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -31,16 +36,15 @@ jobs:
           
           # Google Configuration (if using Google)
           google_api_key: ${{ secrets.GOOGLE_API_KEY }}
-          google_model: 'gemini-2.0-flash' # Optional, defaults to 'gemini-2.0-flash'
+          google_model: 'gemini-2.5-pro' # Optional, defaults to 'gemini-2.0-flash'
           
-          # Soon - Deepseek Configuration (if using Deepseek)
+          # Deepseek Configuration (if using Deepseek)
           deepseek_api_key: ${{ secrets.DEEPSEEK_API_KEY }}
           deepseek_model: 'deepseek-chat'  # Optional
-          
-          # Repository Configuration
-          owner: ${{ github.repository_owner }}
-          repo: ${{ github.event.repository.name }}
-          pr_number: ${{ github.event.number }}
+
+          # X Configuration (if using X)
+          x_api_key: ${{ secrets.X_API_KEY }}
+          x_model: 'grok-3'  # Optional
           
           # Optional file filters
           # include_extensions: '.js,.py,.ts'
