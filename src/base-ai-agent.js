@@ -83,7 +83,7 @@ Be concise but thorough in your review.
         const fullMessage = `${message}: ${error.message}`;
         console.error(fullMessage);
         if (throwError) {
-            throw new Error(fullMessage, { cause: error });
+            throw new Error(fullMessage);
         }
     }
 
@@ -133,7 +133,7 @@ Be concise but thorough in your review.
                 const lineNumber = startIndex + index + 1;
                 return `${lineNumber.toString().padStart(width, " ")}: ${line}`;
             });
-            const escapedPath = pathToFile.replace(/`/g, "\\`");
+            const escapedPath = pathToFile.replace(/\\/g, "\\\\").replace(/`/g, "\\`");
             return `\`\`\`${escapedPath}\n${numberedLines.join("\n")}\n\`\`\``;
         } catch (error) {
             const errMsg = `Error getting file content for ${pathToFile}: ${error.message}`;

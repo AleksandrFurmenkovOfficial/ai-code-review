@@ -50,8 +50,8 @@ class OpenAIAgent extends BaseAIAgent {
                         type: "object",
                         properties: {
                             file_name: { type: "string", description: "The relative path to the file that necessitates a comment" },
-                            start_line_number: { type: "integer", description: "The starting line number where the comment should begin from THE DIFF HUNK (THE FIRST LINE OF DIFF HUNK is ALWAYS 1)! (start_line_number must be strictly greater than first diff hunk line number)" },
-                            end_line_number: { type: "integer", description: "The ending line number where the comment should end from THE DIFF HUNK (THE FIRST LINE OF DIFF HUNK is ALWAYS 1)! (end_line_number must be strictly greater than start_line_number and strictly less than last diff hunk line number)" },
+                            start_line_number: { type: "integer", description: "The starting line number in the diff hunk where the comment should begin! (start_line_number must be strictly greater than first diff hunk line number)" },
+                            end_line_number: { type: "integer", description: "The ending line number in the diff hunk where the comment should end! (end_line_number must be strictly greater than start_line_number and strictly less than last diff hunk line number)" },
                             found_error_description: { type: "string", description: "The review comment content" },
                             side: { type: "string", description: "In a split diff view, the side of the diff that the pull request's changes appear on. Can be LEFT or RIGHT. Use LEFT only for deletions. Use RIGHT for additions/changes! For a multi-line comment, side represents whether the last line of the comment range is a deletion or addition. If unknown use 'Diff view options' from GitHub Help documentation or prefer RIGHT.", enum: ["LEFT", "RIGHT"], default: "RIGHT" }
                         },

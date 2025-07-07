@@ -130,11 +130,11 @@ class AnthropicAgent extends BaseAIAgent {
                         },
                         start_line_number: {
                             type: "integer",
-                            description: "The starting line number where the comment should begin from the diff hunk (start_line_number must be strictly greater than first diff hunk line number)"
+                            description: "The starting line number in the diff hunk where the comment should begin! (start_line_number must be strictly greater than first diff hunk line number)"
                         },
                         end_line_number: {
                             type: "integer",
-                            description: "The ending line number where the comment should end from the diff hunk (end_line_number must be strictly greater than start_line_number and strictly less than last diff hunk line number)"
+                            description: "The ending line number in the diff hunk where the comment should end! (end_line_number must be strictly greater than start_line_number and strictly less than last diff hunk line number)"
                         },
                         found_error_description: {
                             type: "string",

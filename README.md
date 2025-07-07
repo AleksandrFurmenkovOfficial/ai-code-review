@@ -23,7 +23,7 @@ Perform code review using various AI models from OpenAI, Anthropic, Google, X or
 ***openai_model*** - Optional. The OpenAI model name (e.g., gpt-4.1, gpt-4o or o3(super slow)). Default is 'gpt-4.1'.
 
 
-***anthropic_aыpi_key*** - Required if using Anthropic provider. This key is necessary to access Anthropic's API for code review purposes.
+***anthropic_api_key*** - Required if using Anthropic provider. This key is necessary to access Anthropic's API for code review purposes.
 
 ***anthropic_model*** - Optional. The Anthropic model name (e.g., claude-sonnet-4-20250514 or claude-opus-4-20250514). Default is 'claude-sonnet-4-20250514'.
 
