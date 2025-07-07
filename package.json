@@ -1,10 +1,16 @@
 {
   "name": "ai-code-review",
-  "version": "0.8.0",
-  "description": "AI Code Review is a GitHub Action that integrates various AI models (OpenAI, Google, Anthropic, Deepseek) into your code review process, providing automated feedback on pull requests. Improve your code quality and streamline your development workflow with this powerful and customizable AI-driven code review tool.",
+  "version": "0.9.0",
+  "description": "AI Code Review is a GitHub Action that integrates various AI models (OpenAI, Google, Anthropic, X, Deepseek) into your code review process, providing automated feedback on pull requests. Improve your code quality and streamline your development workflow with this powerful and customizable AI-driven code review tool.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/ --ext .js",
+    "lint:fix": "eslint src/ --ext .js --fix",
+    "setup": "node setup.js",
+    "start": "node src/index.js"
   },
   "repository": {
     "type": "git",
@@ -40,8 +46,15 @@
   "dependencies": {
     "@actions/core": "^1.11.1",
     "@actions/github": "^6.0.1",
-    "@anthropic-ai/sdk": "^0.52.0",
+    "@anthropic-ai/sdk": "^0.55.0",
     "@google/generative-ai": "^0.24.1",
-    "openai": "^5.0.1"
+    "he": "^1.2.0",
+    "openai": "^5.8.2",
+    "shell-quote": "^1.8.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.30.0",
+    "eslint": "^9.30.1",
+    "jest": "^30.0.3"
   }
 }

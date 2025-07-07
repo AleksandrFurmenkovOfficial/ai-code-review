@@ -1,11 +1,73 @@
-const core = require("@actions/core");
-const GitHubAPI = require("./github-api.js");
-const OpenAIAgent = require("./openai-agent.js");
-const AnthropicAgent = require("./anthropic-agent.js");
-const GoogleAgent = require("./google-agent.js");
-const DeepseekAgent = require("./deepseek-agent.js");
+const path = require("path");
+const he = require("he");
+const shellQuote = require("shell-quote").quote;
 
-const { AI_REVIEW_COMMENT_PREFIX, SUMMARY_SEPARATOR } = require('./constants');
+const core = require("./core-wrapper");
+const GitHubAPI = require("./github-api");
+const OpenAIAgent = require("./openai-agent");
+const AnthropicAgent = require("./anthropic-agent");
+const GoogleAgent = require("./google-agent");
+const DeepseekAgent = require("./deepseek-agent");
+const XAgent = require("./x-agent");
+const { AI_REVIEW_COMMENT_PREFIX, SUMMARY_SEPARATOR } = require("./constants");
+
+/* -------------------------------------------------------------------------- */
+/*                               Sanitizers                                   */
+/* -------------------------------------------------------------------------- */
+
+function sanitizeString(value, { maxLen = 10_000, context = "none" } = {}) {
+    if (value === null || value === undefined) {
+        return "";
+    }
+    const str = String(value).trim().slice(0, maxLen);
+
+    switch (context) {
+        case "html":
+            return he.encode(str, { useNamedReferences: true });
+        case "shell":
+            return shellQuote([str]);
+        default:
+            // eslint-disable-next-line no-control-regex
+            return str.replace(/[\u0000-\u001F\u007F]/g, "");
+    }
+}
+
+// eslint-disable-next-line no-unused-vars
+function sanitizeNumber(value, { min = 0, max = Number.MAX_SAFE_INTEGER } = {}) {
+    const num = Number(value);
+    if (Number.isNaN(num)) {
+        throw new TypeError("Expected a number");
+    }
+    return Math.min(Math.max(num, min), max);
+}
+
+function sanitizeBool(value) {
+    if (typeof value === "boolean") {
+        return value;
+    }
+    if (typeof value === "string") {
+        return /^(true|1)$/i.test(value.trim());
+    }
+    return Boolean(value);
+}
+
+function sanitizePath(value) {
+    if (value === null || value === undefined) {
+        return "";
+    }
+    const str = String(value).trim();
+    if (!str) {
+        return "";
+    }
+    // eslint-disable-next-line no-control-regex
+    const safe = str.replace(/[<>:"|?*\x00-\x1F]/g, "_");
+    const normalized = path.posix.normalize(safe).replace(/^(\.\.(\/|\\|$))+/, "");
+    return normalized === "." ? "" : normalized;
+}
+
+/* -------------------------------------------------------------------------- */
+/*                               InputProcessor                               */
+/* -------------------------------------------------------------------------- */
 
 class InputProcessor {
     constructor() {
@@ -24,7 +86,9 @@ class InputProcessor {
         this._fileContentGetter = null;
         this._fileCommentator = null;
     }
-    
+
+    /* ----------------------------- Public API ------------------------------ */
+
     async processInputs() {
         this._readInputs();
         this._validateInputs();
@@ -33,164 +97,137 @@ class InputProcessor {
         this._setupReviewTools();
         return this;
     }
-    
-    _sanitizeInput(input, type = 'string') {
-        if (input === null || input === undefined) {
-            return type === 'string' ? '' : null;
-        }
-        
-        if (type === 'string') {
-            return String(input)
-                .replace(/[^\x20-\x7E]/g, '')
-                .trim();
-        }
-        
-        if (type === 'number') {
-            const num = Number(input);
-            return isNaN(num) ? 0 : num;
-        }
-        
-        if (type === 'boolean') {
-            return Boolean(input);
-        }
-        
-        if (type === 'path') {
-            return String(input)
-                .replace(/\.{2,}/g, '.')
-                .replace(/[^\w\-./\\]/g, '_')
-                .trim();
-        }
-        
-        return input;
-    }
-    
+
+    /* --------------------------- Private helpers --------------------------- */
+
     _readInputs() {
-        this._repo = this._sanitizeInput(core.getInput("repo", { required: true, trimWhitespace: true }));
-        this._owner = this._sanitizeInput(core.getInput("owner", { required: true, trimWhitespace: true }));
-        this._pullNumber = parseInt(core.getInput("pr_number", { required: true, trimWhitespace: true }), 10);
-        this._githubToken = this._sanitizeInput(core.getInput("token", { required: true, trimWhitespace: true }));
-        this._aiProvider = this._sanitizeInput(core.getInput("ai_provider", { required: true, trimWhitespace: true }));
-        this._apiKey = this._sanitizeInput(core.getInput(`${this._aiProvider}_api_key`, { required: true, trimWhitespace: true }));
-        this._model = this._sanitizeInput(core.getInput(`${this._aiProvider}_model`, { required: true, trimWhitespace: true }));
-        this._failAction = core.getInput("fail_action_if_review_failed", { required: false, trimWhitespace: true }).toLowerCase() === 'true';
-        
-        this._includeExtensions = this._sanitizeInput(core.getInput("include_extensions", { required: false }));
-        this._excludeExtensions = this._sanitizeInput(core.getInput("exclude_extensions", { required: false }));
-        this._includePaths = this._sanitizeInput(core.getInput("include_paths", { required: false }), 'path');
-        this._excludePaths = this._sanitizeInput(core.getInput("exclude_paths", { required: false }), 'path');
-        
-        if (!this._includeExtensions) core.info("Using default: include all extensions");
-        if (!this._excludeExtensions) core.info("Using default: exclude no extensions");
-        if (!this._includePaths) core.info("Using default: include all paths");
-        if (!this._excludePaths) core.info("Using default: exclude no paths");
-    }
-    
-    _validateInputs() {
-        if (!this._repo) throw new Error("Repository name is required.");
-        if (!this._owner) throw new Error("Owner name is required.");
-        if (!this._pullNumber || isNaN(this._pullNumber)) throw new Error("Pull request number must be a valid number.");
-        if (!this._githubToken) throw new Error("GitHub token is required.");
-        if (!this._aiProvider) throw new Error("AI provider is required.");
-        if (!this._apiKey) throw new Error(`${this._aiProvider} API key is required.`);
-        
-        const supportedProviders = ['openai', 'anthropic', 'google', 'deepseek'];
-        if (!supportedProviders.includes(this._aiProvider)) {
-            throw new Error(`Unsupported AI provider: ${this._aiProvider}. Supported providers: ${supportedProviders.join(', ')}`);
+        this._repo = sanitizeString(core.getInput("repo", { required: true, trimWhitespace: true }));
+        this._owner = sanitizeString(core.getInput("owner", { required: true, trimWhitespace: true }));
+        this._pullNumber = sanitizeNumber(core.getInput("pr_number", { required: true, trimWhitespace: true }), { min: 1 });
+        this._githubToken = sanitizeString(core.getInput("token", { required: true, trimWhitespace: true }));
+        this._aiProvider = sanitizeString(core.getInput("ai_provider", { required: true, trimWhitespace: true })).toLowerCase();
+        this._apiKey = sanitizeString(core.getInput(`${this._aiProvider}_api_key`, { required: true, trimWhitespace: true }));
+        this._model = sanitizeString(core.getInput(`${this._aiProvider}_model`, { required: true, trimWhitespace: true }));
+        this._failAction = sanitizeBool(core.getInput("fail_action_if_review_failed"));
+
+        this._includeExtensions = sanitizeString(core.getInput("include_extensions"));
+        this._excludeExtensions = sanitizeString(core.getInput("exclude_extensions"));
+        this._includePaths = sanitizePath(core.getInput("include_paths"));
+        this._excludePaths = sanitizePath(core.getInput("exclude_paths"));
+
+        if (!this._includeExtensions) {
+            core.info("Using default: include all extensions");
+        }
+        if (!this._excludeExtensions) {
+            core.info("Using default: exclude no extensions");
+        }
+        if (!this._includePaths) {
+            core.info("Using default: include all paths");
+        }
+        if (!this._excludePaths) {
+            core.info("Using default: exclude no paths");
         }
     }
-    
+
+    _validateInputs() {
+        if (!this._repo) {
+            throw new Error("Repository name is required.");
+        }
+        if (!this._owner) {
+            throw new Error("Owner name is required.");
+        }
+        if (!this._pullNumber) {
+            throw new Error("Pull request number must be a valid number.");
+        }
+        if (!this._githubToken) {
+            throw new Error("GitHub token is required.");
+        }
+        if (!this._aiProvider) {
+            throw new Error("AI provider is required.");
+        }
+        if (!this._apiKey) {
+            throw new Error(`${this._aiProvider} API key is required.`);
+        }
+
+        const supportedProviders = ["openai", "anthropic", "google", "deepseek", "x"];
+        if (!supportedProviders.includes(this._aiProvider)) {
+            throw new Error(`Unsupported AI provider: ${this._aiProvider}. Supported providers: ${supportedProviders.join(", ")}`);
+        }
+    }
+
     async _setupGitHubAPI() {
         this._githubAPI = new GitHubAPI(this._githubToken);
         const pullRequestData = await this._githubAPI.getPullRequest(this._owner, this._repo, this._pullNumber);
         this._headCommit = pullRequestData.head.sha;
         this._baseCommit = pullRequestData.base.sha;
     }
-    
+
     async _processChangedFiles() {
         const comments = await this._githubAPI.listPRComments(this._owner, this._repo, this._pullNumber);
-        const lastReviewComment = [...comments].reverse()
-            .find(comment => comment.body && comment.body.startsWith(AI_REVIEW_COMMENT_PREFIX));
-        
-        let changedFiles;
-        
-        if (lastReviewComment) {
-            core.info(`Found last review comment: ${lastReviewComment.body.split('\n')[0]}`);
-            
-            let newBaseCommit = lastReviewComment.body
-                .split(SUMMARY_SEPARATOR)[0]
-                .replace(AI_REVIEW_COMMENT_PREFIX, '')
-                .split(' ')[0];
+        const lastReviewComment = [...comments].reverse().find(c => c.body && c.body.startsWith(AI_REVIEW_COMMENT_PREFIX));
 
-            let isNewBaseFound = (newBaseCommit && typeof newBaseCommit === 'string' && newBaseCommit.trim() !== '');
-            if (isNewBaseFound){
+        if (lastReviewComment) {
+            core.info(`Found last review comment: ${lastReviewComment.body.split("\n")[0]}`);
+            const newBaseCommit = lastReviewComment.body
+                .split(SUMMARY_SEPARATOR)[0]
+                .replace(AI_REVIEW_COMMENT_PREFIX, "")
+                .split(" ")[0]
+                .trim();
+
+            if (newBaseCommit) {
                 core.info(`New base commit ${newBaseCommit}. Incremental review will be performed`);
                 this._baseCommit = newBaseCommit;
             }
-
         } else {
-            core.info(`No previous review comments found, reviewing all files in PR`);
+            core.info("No previous review comments found, reviewing all files in PR");
         }
-            
-        changedFiles = await this._githubAPI.getFilesBetweenCommits(
+
+        const changedFiles = await this._githubAPI.getFilesBetweenCommits(
             this._owner,
             this._repo,
             this._baseCommit,
             this._headCommit
         );
-        
-        this._filteredDiffs = this._getFilteredChangedFiles(
+
+        this._filteredDiffs = this._filterChangedFiles(
             changedFiles,
             this._includeExtensions,
             this._excludeExtensions,
             this._includePaths,
             this._excludePaths
         );
-        
+
         core.info(`Found ${this._filteredDiffs.length} files to review`);
     }
-    
-    _getFilteredChangedFiles(changedFiles, includeExtensions, excludeExtensions, includePaths, excludePaths) {
-        const stringToArray = (inputString) => {
-            if (!inputString) return [];
-            return inputString.split(',')
-                .map(item => {
-                    const normalized = item.trim().replace(/\\/g, '/');
-                    if (normalized.startsWith('.')) {
-                        return normalized;
-                    }
-                    return normalized.endsWith('/') ? normalized : normalized + '/';
-                })
-                .filter(Boolean);
+
+    _filterChangedFiles(changedFiles, includeExtensions, excludeExtensions, includePaths, excludePaths) {
+        const toArray = str => (str ? str.split(",").map(s => s.trim()).filter(Boolean) : []);
+
+        const incExt = toArray(includeExtensions);
+        const excExt = toArray(excludeExtensions);
+        const incPath = toArray(includePaths);
+        const excPath = toArray(excludePaths);
+
+        const shouldReview = file => {
+            const filePath = file.filename.replace(/\\/g, "/");
+            const ext = path.posix.extname(filePath);
+
+            const extAllowed = !incExt.length || incExt.includes(ext);
+            const extExcluded = excExt.includes(ext);
+
+            const inAllowedPath = !incPath.length || incPath.some(p => filePath.startsWith(p));
+            const inExcludedPath = excPath.some(p => filePath.startsWith(p));
+
+            return extAllowed && !extExcluded && inAllowedPath && !inExcludedPath;
         };
-        
-        const includeExtensionsArray = stringToArray(includeExtensions);
-        const excludeExtensionsArray = stringToArray(excludeExtensions);
-        const includePathsArray = stringToArray(includePaths);
-        const excludePathsArray = stringToArray(excludePaths);
-        
-        const isFileToReview = (filename) => {
-            const normalizedFilename = filename.replace(/\\/g, '/');
-            
-            const hasValidExtension = includeExtensionsArray.length === 0 || 
-                includeExtensionsArray.some(ext => normalizedFilename.endsWith(ext));
-            const hasExcludedExtension = excludeExtensionsArray.length > 0 && 
-                excludeExtensionsArray.some(ext => normalizedFilename.endsWith(ext));
-            
-            const isInIncludedPath = includePathsArray.length === 0 || 
-                includePathsArray.some(path => normalizedFilename.startsWith(path));
-            const isInExcludedPath = excludePathsArray.length > 0 && 
-                excludePathsArray.some(path => normalizedFilename.startsWith(path));
-            
-            return hasValidExtension && !hasExcludedExtension && isInIncludedPath && !isInExcludedPath;
-        };
-        
-        return changedFiles.filter(file => isFileToReview(file.filename.replace(/\\/g, '/')));
+
+        return changedFiles.filter(shouldReview);
     }
-    
+
     _setupReviewTools() {
-        this._fileContentGetter = async (filePath) => 
-            await this._githubAPI.getContent(this._owner, this._repo, this._baseCommit, this._headCommit, filePath);
-            
+        this._fileContentGetter = filePath =>
+            this._githubAPI.getContent(this._owner, this._repo, this._baseCommit, this._headCommit, filePath);
+
         this._fileCommentator = async (comment, filePath, side, startLineNumber, endLineNumber) => {
             await this._githubAPI.createReviewComment(
                 this._owner,
@@ -205,30 +242,27 @@ class InputProcessor {
             );
         };
     }
-    
+
+    /* ----------------------------- AI agent -------------------------------- */
     getAIAgent() {
-        let aiAgent;
-        
         switch (this._aiProvider) {
-            case 'openai':
-                aiAgent = new OpenAIAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model);
-                break;
-            case 'anthropic':
-                aiAgent = new AnthropicAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model);
-                break;
-            case 'google':
-                aiAgent = new GoogleAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model);
-                break;
-            case 'deepseek':
-                aiAgent = new DeepseekAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model);
-                break;
+            case "openai":
+                return new OpenAIAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model);
+            case "anthropic":
+                return new AnthropicAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model);
+            case "google":
+                return new GoogleAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model);
+            case "deepseek":
+                return new DeepseekAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model);
+            case "x":
+                return new XAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model);
             default:
                 throw new Error(`Unsupported AI provider: ${this._aiProvider}`);
         }
-        
-        return aiAgent;
     }
-    
+
+    /* ------------------------------ Getters -------------------------------- */
+
     get filteredDiffs() { return this._filteredDiffs; }
     get githubAPI() { return this._githubAPI; }
     get headCommit() { return this._headCommit; }

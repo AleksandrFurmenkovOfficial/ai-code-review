@@ -1,6 +1,6 @@
-const InputProcessor = require('./input-processor.js');
-const core = require('@actions/core');
-const { AI_REVIEW_COMMENT_PREFIX, SUMMARY_SEPARATOR } = require('./constants');
+const InputProcessor = require("./input-processor");
+const core = require("./core-wrapper");
+const { AI_REVIEW_COMMENT_PREFIX, SUMMARY_SEPARATOR } = require("./constants");
 
 const main = async () => {
     const inputProcessor = new InputProcessor();
@@ -28,13 +28,13 @@ const main = async () => {
         );
 
     } catch (error) {
-        if (!inputProcessor?.failAction) {
-            core.debug(error.stack);
-            core.warning(error.message);
-        } else {            
+        if (inputProcessor.failAction) {            
             core.debug(error.stack);
             core.error(error.message);
             core.setFailed(error);
+        } else {
+            core.debug(error.stack);
+            core.warning(error.message);
         }
     }
 };

@@ -3,7 +3,55 @@
 
 ## Description
 
-Perform code review using various AI models from OpenAI, Anthropic, Google or Deepseek to analyze and provide feedback on your code. This GitHub Action helps improve the code quality by automatically reviewing pull requests, focusing on specified file extensions, and excluding specific paths.
+Perform code review using various AI models from OpenAI, Anthropic, Google, X or Deepseek to analyze and provide feedback on your code. This GitHub Action helps improve the code quality by automatically reviewing pull requests, focusing on specified file extensions, and excluding specific paths.
+
+## Inputs
+
+***token*** - Required. This GitHub token is used for authentication and to access your GitHub repository.
+
+***owner*** - Required. The username of the repository owner.
+
+***repo*** - Required. The name of the repository.
+
+***pr_number*** - Required. The number of the pull request that needs to be reviewed.
+
+***ai_provider*** - Required. The AI provider to use { openai, anthropic, google, x, deepseek}. Default is 'openai'.
+
+
+***openai_api_key*** - Required if using OpenAI provider. This key is necessary to access OpenAI's API for code review purposes.
+
+***openai_model*** - Optional. The OpenAI model name (e.g., gpt-4.1, gpt-4o or o3(super slow)). Default is 'gpt-4.1'.
+
+
+***anthropic_aыpi_key*** - Required if using Anthropic provider. This key is necessary to access Anthropic's API for code review purposes.
+
+***anthropic_model*** - Optional. The Anthropic model name (e.g., claude-sonnet-4-20250514 or claude-opus-4-20250514). Default is 'claude-sonnet-4-20250514'.
+
+
+***google_api_key*** - Required if using Google provider. This key is necessary to access Google's API for code review purposes.
+
+***google_model*** - Optional. The Google model name (e.g., gemini-2.5-pro or gemini-2.5-flash). Default is 'gemini-2.5-flash'.
+
+
+***deepseek_api_key*** - Required if using Deepseek provider. This key is necessary to access Deepseek's API for code review purposes.
+
+***deepseek_model*** - Optional. The Deepseek model name (e.g., deepseek-chat). Default is 'deepseek-chat'.
+
+
+***x_api_key*** - Required if using X provider. This key is necessary to access X's API for code review purposes.
+
+***x_model*** - Optional. The Deepseek model name (e.g., grok-3 or grok-4). Default is 'grok-3'.
+
+
+***include_extensions*** - Optional. A comma-separated list of file extensions to include in the review (e.g., ".py,.js,.html"). If not specified, the action will consider all file types.
+
+***exclude_extensions*** - Optional. A comma-separated list of file extensions to exclude from the review.
+
+***include_paths*** - Optional. A comma-separated list of directory paths to include in the review.
+
+***exclude_paths*** - Optional. A comma-separated list of directory paths to exclude from the review (e.g., "test/,docs/"). If not specified, the action will consider all paths.
+
+***fail_action_if_review_failed*** - Optional. If set to true, the action fails when the review process fails. Default is 'false'.
 
 ## Usage Examples
 
@@ -23,7 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: AI Code Review
-      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.8
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.9
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         owner: ${{ github.repository_owner }}
@@ -32,7 +80,7 @@ jobs:
         
         ai_provider: 'openai'
         openai_api_key: ${{ secrets.OPENAI_API_KEY }}
-        openai_model: 'gpt-4o'
+        openai_model: 'gpt-4.1'
 ```
 
 ### Anthropic Example
@@ -49,7 +97,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: AI Code Review
-      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.8
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.9
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         owner: ${{ github.repository_owner }}
@@ -58,7 +106,7 @@ jobs:
         
         ai_provider: 'anthropic'
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-        anthropic_model: 'claude-3-7-sonnet-20250219'
+        anthropic_model: 'claude-sonnet-4-20250514'
 ```
 
 ### Google Example
@@ -75,7 +123,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: AI Code Review
-      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.8
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.9
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         owner: ${{ github.repository_owner }}
@@ -84,7 +132,7 @@ jobs:
         
         ai_provider: 'google'
         google_api_key: ${{ secrets.GOOGLE_API_KEY }}
-        google_model: 'gemini-2.0-flash'
+        google_model: 'gemini-2.5-flash'
 ```
 
 ### Deepseek Example
@@ -101,7 +149,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: AI Code Review
-      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.8
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.9
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         owner: ${{ github.repository_owner }}
@@ -111,6 +159,32 @@ jobs:
         ai_provider: 'deepseek'
         deepseek_api_key: ${{ secrets.DEEPSEEK_API_KEY }}
         deepseek_model: 'deepseek-chat'
+```
+
+### X Example
+
+```yaml
+name: AI Code Review with X
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  ai_code_review:
+    runs-on: ubuntu-latest
+    steps:
+    - name: AI Code Review
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.9
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        owner: ${{ github.repository_owner }}
+        repo: ${{ github.event.repository.name }}
+        pr_number: ${{ github.event.number }}
+        
+        ai_provider: 'x'
+        x_api_key: ${{ secrets.X_API_KEY }}
+        x_model: 'grok-3'
 ```
 
 ### Advanced Configuration Example
@@ -127,7 +201,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: AI Code Review
-      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.8
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.9
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         owner: ${{ github.repository_owner }}
@@ -143,49 +217,6 @@ jobs:
         exclude_paths: 'test/,docs/'
         fail_action_if_review_failed: 'true'
 ```
-
-## Inputs
-
-***token*** - Required. This GitHub token is used for authentication and to access your GitHub repository.
-
-***owner*** - Required. The username of the repository owner.
-
-***repo*** - Required. The name of the repository.
-
-***pr_number*** - Required. The number of the pull request that needs to be reviewed.
-
-***ai_provider*** - Required. The AI provider to use { openai, anthropic, google, deepseek}. Default is 'openai'.
-
-
-***openai_api_key*** - Required if using OpenAI provider. This key is necessary to access OpenAI's API for code review purposes.
-
-***openai_model*** - Optional. The OpenAI model name (e.g., gpt-4o). Default is 'gpt-4o'.
-
-
-***anthropic_api_key*** - Required if using Anthropic provider. This key is necessary to access Anthropic's API for code review purposes.
-
-***anthropic_model*** - Optional. The Anthropic model name (e.g., claude-3-7-sonnet-20250219). Default is 'claude-3-7-sonnet-latest'.
-
-
-***google_api_key*** - Required if using Google provider. This key is necessary to access Google's API for code review purposes.
-
-***google_model*** - Optional. The Google model name (e.g., gemini-2.0-flash). Default is 'gemini-2.0-flash'.
-
-
-***deepseek_api_key*** - Required if using Deepseek provider. This key is necessary to access Deepseek's API for code review purposes.
-
-***deepseek_model*** - Optional. The Deepseek model name (e.g., deepseek-chat). Default is 'deepseek-chat'.
-
-
-***include_extensions*** - Optional. A comma-separated list of file extensions to include in the review (e.g., ".py,.js,.html"). If not specified, the action will consider all file types.
-
-***exclude_extensions*** - Optional. A comma-separated list of file extensions to exclude from the review.
-
-***include_paths*** - Optional. A comma-separated list of directory paths to include in the review.
-
-***exclude_paths*** - Optional. A comma-separated list of directory paths to exclude from the review (e.g., "test/,docs/"). If not specified, the action will consider all paths.
-
-***fail_action_if_review_failed*** - Optional. If set to true, the action fails when the review process fails. Default is 'false'.
 
 ## Troubleshooting
 

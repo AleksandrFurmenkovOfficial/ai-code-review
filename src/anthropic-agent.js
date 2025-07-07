@@ -1,6 +1,8 @@
-const { warning, info } = require("@actions/core");
 const Anthropic = require("@anthropic-ai/sdk");
+
 const BaseAIAgent = require("./base-ai-agent");
+const core = require("./core-wrapper");
+const { MAX_REVIEW_ITERATIONS } = require("./constants");
 
 const c_max_completion_tokens = 8192;
 
@@ -10,7 +12,7 @@ class AnthropicAgent extends BaseAIAgent {
         this.anthropic = new Anthropic({ apiKey });
     }
 
-    async initialize() {
+    initialize() {
         return true;
     }
 
@@ -39,7 +41,7 @@ class AnthropicAgent extends BaseAIAgent {
                     }
 
                     const backoff = initialBackoff * Math.pow(2, retries) + Math.random() * 1000;
-                    warning(`Retry ${retries + 1}/${maxRetries}: ${error.message}. Retrying in ${Math.round(backoff)}ms`);
+                    core.warning(`Retry ${retries + 1}/${maxRetries}: ${error.message}. Retrying in ${Math.round(backoff)}ms`);
                     await new Promise(resolve => setTimeout(resolve, backoff));
                 }
             }
@@ -56,7 +58,7 @@ class AnthropicAgent extends BaseAIAgent {
      * - Remove cache_control from previous messages
      */
     applyCacheControl(messages) {
-        if (!messages || messages.length === 0) return messages;
+        if (!messages || messages.length === 0) {return messages;}
 
         const processedMessages = JSON.parse(JSON.stringify(messages));
 
@@ -82,12 +84,11 @@ class AnthropicAgent extends BaseAIAgent {
         return processedMessages;
     }
 
-    async processReview(changedFiles) {
-        const reviewState = {
+    async processReview(changedFiles) { const reviewState = {
             summary: '',
             reviewedFiles: new Set(),
             commentsMade: 0,
-            maxIterations: 142,
+            maxIterations: MAX_REVIEW_ITERATIONS,
             iterationCount: 0,
             seenToolCalls: new Set(),
             processedFiles: new Set(),
@@ -166,8 +167,8 @@ class AnthropicAgent extends BaseAIAgent {
         ];
 
         try {
-            info("Starting code review with Anthropic API...");
-            info(`Processing ${changedFiles.length} changed files...`);
+            core.info("Starting code review with Anthropic API...");
+            core.info(`Processing ${changedFiles.length} changed files...`);
 
             const initialUserMessage = {
                 role: 'user',
@@ -202,7 +203,7 @@ class AnthropicAgent extends BaseAIAgent {
 
         reviewState.iterationCount++;
         if (reviewState.iterationCount >= reviewState.maxIterations) {
-            warning(`Reached maximum number of iterations (${reviewState.maxIterations}). Breaking potential infinite loop.`);
+            core.warning(`Reached maximum number of iterations (${reviewState.maxIterations}). Breaking potential infinite loop.`);
             if (!reviewState.summary) {
                 return `Code review terminated early after ${reviewState.iterationCount} iterations. Processed ${reviewState.reviewedFiles.size} files with ${reviewState.commentsMade} comments.`;
             }
@@ -291,7 +292,7 @@ class AnthropicAgent extends BaseAIAgent {
             tools: tools
         });
 
-        return await this.handleMessageResponse(nextMessage, tools, reviewState);
+        return this.handleMessageResponse(nextMessage, tools, reviewState);
     }
 }
 
