@@ -1,3 +1,36 @@
+const core = require("./core-wrapper");
+const constants = require("./constants");
+
+class SimpleMutex {
+    constructor() {
+        this._locked = false;
+        this._waiting = [];
+    }
+    acquire(timeoutMs = 10000) {
+        return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error("Timeout while waiting for cache lock")), timeoutMs);
+            const grant = () => {
+                clearTimeout(timer);
+                resolve();
+            };
+            if (!this._locked) {
+                this._locked = true;
+                grant();
+            } else {
+                this._waiting.push(grant);
+            }
+        });
+    }
+    release() {
+        if (this._waiting.length) {
+            const next = this._waiting.shift();
+            next();
+        } else {
+            this._locked = false;
+        }
+    }
+}
+
 class BaseAIAgent {
     constructor(apiKey, fileContentGetter, fileCommentator, model) {
         this.apiKey = apiKey;
@@ -5,7 +38,8 @@ class BaseAIAgent {
         this.fileCommentator = fileCommentator;
         this.model = model;
         this.fileCache = new Map();
-        this.cacheLock = false;
+        this.cacheMutex = new SimpleMutex();
+        this.MAX_CACHE_ENTRIES = constants.MAX_CACHE_ENTRIES;
     }
 
     getSystemPrompt() {
@@ -46,57 +80,64 @@ Be concise but thorough in your review.
     }
 
     handleError(error, message, throwError = true) {
-        console.error(`${message}: ${error.message}`);
+        const fullMessage = `${message}: ${error.message}`;
+        console.error(fullMessage);
         if (throwError) {
-            throw new Error(`${message}: ${error.message}`);
+            throw new Error(fullMessage);
         }
     }
 
     async getFileContentWithCache(pathToFile, startLineNumber, endLineNumber) {
+        if (!pathToFile || typeof pathToFile !== "string") {
+            throw new Error("Invalid file path provided");
+        }
+        if (
+            !Number.isInteger(startLineNumber) ||
+            !Number.isInteger(endLineNumber) ||
+            startLineNumber < 1 ||
+            endLineNumber < 1 ||
+            startLineNumber > endLineNumber
+        ) {
+            throw new Error("Invalid line numbers provided");
+        }
         try {
-            const acquireLock = async () => {
-                const timeout = 5000; // 5 seconds
-                const start = Date.now();
-                while (this.cacheLock) {
-                    if (Date.now() - start > timeout) {
-                        throw new Error("Timeout while waiting for cache lock");
-                    }
-                    await new Promise(resolve => setTimeout(resolve, 10));
-                }
-                this.cacheLock = true;
-            };
-            
-            const releaseLock = () => {
-                this.cacheLock = false;
-            };
-            
-            await acquireLock();
+            await this.cacheMutex.acquire();
             let content;
-            
             try {
-                if (!this.fileCache.has(pathToFile)) {
-                    releaseLock();
-                    content = await this.fileContentGetter(pathToFile);
-                    await acquireLock();
-                    this.fileCache.set(pathToFile, content);
+                const cacheKey = `${pathToFile}`;
+                if (this.fileCache.has(cacheKey)) {
+                    content = this.fileCache.get(cacheKey);
                 } else {
-                    content = this.fileCache.get(pathToFile);
+                    core.info(`Fetching content for file: ${pathToFile}`);
+                    content = await this.fileContentGetter(pathToFile);
+                    if (typeof content !== "string") {
+                        throw new Error(`Invalid content type received for ${pathToFile}`);
+                    }
+                    this.fileCache.set(cacheKey, content);
+                    if (this.fileCache.size > this.MAX_CACHE_ENTRIES) {
+                        const oldestKey = this.fileCache.keys().next().value;
+                        this.fileCache.delete(oldestKey);
+                    }
                 }
             } finally {
-                releaseLock();
+                this.cacheMutex.release();
             }
-            
-            const span = 20;
-            const lines = content.split('\n');
+
+            const span = Number.isInteger(constants.LINE_SPAN) && constants.LINE_SPAN >= 0 ? constants.LINE_SPAN : 3;
+            const lines = content.split(/\r?\n/);
             const startIndex = Math.max(0, startLineNumber - 1 - span);
             const endIndex = Math.min(lines.length, endLineNumber + span);
             const selectedLines = lines.slice(startIndex, endIndex);
-            return `\`\`\`${pathToFile}\n${selectedLines.join('\n')}\n\`\`\``;
+            const width = Math.max(4, String(lines.length).length);
+            const numberedLines = selectedLines.map((line, index) => {
+                const lineNumber = startIndex + index + 1;
+                return `${lineNumber.toString().padStart(width, " ")}: ${line}`;
+            });
+            const escapedPath = pathToFile.replace(/\\/g, "\\\\").replace(/`/g, "\\`");
+            return `\`\`\`${escapedPath}\n${numberedLines.join("\n")}\n\`\`\``;
         } catch (error) {
-            if (this.cacheLock) {
-                this.cacheLock = false;
-            }
-            this.handleError(error, 'Error getting file content', true);
+            const errMsg = `Error getting file content for ${pathToFile}: ${error.message}`;
+            core.error(errMsg);
             return `Error getting file content: ${error.message}`;
         }
     }
@@ -115,26 +156,25 @@ Be concise but thorough in your review.
     }
 
     async addReviewComment(fileName, startLineNumber, endLineNumber, foundErrorDescription, side = "RIGHT") {
+        const validationError = this.validateLineNumbers(startLineNumber, endLineNumber);
+        if (validationError) {
+            this.handleError(new Error(validationError), "Validation error", false);
+            return validationError;
+        }
         try {
-            const validationError = this.validateLineNumbers(startLineNumber, endLineNumber);
-            if (validationError) {
-                this.handleError(new Error(validationError), 'Validation error', true);
-                return validationError;
-            }
-            
             await this.fileCommentator(foundErrorDescription, fileName, side, startLineNumber, endLineNumber);
             return "Success! The review comment has been published.";
         } catch (error) {
-            this.handleError(error, 'Error creating review comment', true);
+            this.handleError(error, "Error creating review comment", false);
             return `Error! Please ensure that the lines you specify for the comment are part of the DIFF! Error message: ${error.message}`;
         }
     }
 
-    async doReview(changedFiles) {
+    doReview(_changedFiles) {
         throw new Error("Method 'doReview' must be implemented by subclass");
     }
 
-    async initialize() {
+    initialize() {
         throw new Error("Method 'initialize' must be implemented by subclass");
     }
 }
