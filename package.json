@@ -35,7 +35,8 @@
     "gemini",
     "anthropic",
     "claude",
-    "deepseek"
+    "deepseek",
+    "perplexity"
   ],
   "author": "Aleksandr Furmenkov",
   "license": "MIT",

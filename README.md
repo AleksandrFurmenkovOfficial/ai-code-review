@@ -43,6 +43,11 @@ Perform code review using various AI models from OpenAI, Anthropic, Google, X or
 ***x_model*** - Optional. The Deepseek model name (e.g., grok-3 or grok-4). Default is 'grok-3'.
 
 
+***perplexity_api_key*** - Required if using Perplexity provider. This key is necessary to access Perplexity's API for code review purposes.
+
+***perplexity_model*** - Optional. The Perplexity model name (e.g., sonar, sonar-pro, r1-1776, sonar-reasoning-pro). Default is 'sonar-reasoning-pro'.
+
+
 ***include_extensions*** - Optional. A comma-separated list of file extensions to include in the review (e.g., ".py,.js,.html"). If not specified, the action will consider all file types.
 
 ***exclude_extensions*** - Optional. A comma-separated list of file extensions to exclude from the review.
