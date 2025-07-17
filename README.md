@@ -3,7 +3,7 @@
 
 ## Description
 
-Perform code review using various AI models from OpenAI, Anthropic, Google, X or Deepseek to analyze and provide feedback on your code. This GitHub Action helps improve the code quality by automatically reviewing pull requests, focusing on specified file extensions, and excluding specific paths.
+Perform code review using various AI models from OpenAI, Anthropic, Google, X, Deepseek or Perplexity to analyze and provide feedback on your code. This GitHub Action helps improve the code quality by automatically reviewing pull requests, focusing on specified file extensions, and excluding specific paths.
 
 ## Inputs
 
@@ -190,6 +190,32 @@ jobs:
         ai_provider: 'x'
         x_api_key: ${{ secrets.X_API_KEY }}
         x_model: 'grok-3'
+```
+
+### Perplexity Example
+
+```yaml
+name: AI Code Review with Perplexity
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  ai_code_review:
+    runs-on: ubuntu-latest
+    steps:
+    - name: AI Code Review
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.9
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        owner: ${{ github.repository_owner }}
+        repo: ${{ github.event.repository.name }}
+        pr_number: ${{ github.event.number }}
+        
+        ai_provider: 'perplexity'
+        perplexity_api_key: ${{ secrets.PERPLEXITY_API_KEY }}
+        perplexity_model: 'sonar-reasoning-pro'
 ```
 
 ### Advanced Configuration Example
