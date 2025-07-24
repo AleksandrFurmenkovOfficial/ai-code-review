@@ -9,12 +9,12 @@ const { MAX_REVIEW_ITERATIONS } = require("./constants");
  * -----------
  * Automates pull-request code review by orchestrating OpenAI function-calling
  * with three tools: get_file_content, add_review_comment, mark_as_done.
- * 
+ *
  * **Public API is unchanged**; only internal loop/iteration logic was fixed.
  */
 class OpenAIAgent extends BaseAIAgent {
-    constructor(apiKey, fileContentGetter, fileCommentator, model, baseURL = null) {
-        super(apiKey, fileContentGetter, fileCommentator, model);
+    constructor(apiKey, fileContentGetter, fileCommentator, model, reviewRulesContent, baseURL = null) {
+        super(apiKey, fileContentGetter, fileCommentator, model, reviewRulesContent);
 
         if (!baseURL || baseURL.trim() === "") {
             core.info("Using default OpenAI API URL");

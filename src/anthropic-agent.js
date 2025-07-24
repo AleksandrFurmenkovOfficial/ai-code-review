@@ -7,8 +7,8 @@ const { MAX_REVIEW_ITERATIONS } = require("./constants");
 const c_max_completion_tokens = 8192;
 
 class AnthropicAgent extends BaseAIAgent {
-    constructor(apiKey, fileContentGetter, fileCommentator, model) {
-        super(apiKey, fileContentGetter, fileCommentator, model);
+    constructor(apiKey, fileContentGetter, fileCommentator, model, reviewRulesContent) {
+        super(apiKey, fileContentGetter, fileCommentator, model, reviewRulesContent);
         this.anthropic = new Anthropic({ apiKey });
     }
 

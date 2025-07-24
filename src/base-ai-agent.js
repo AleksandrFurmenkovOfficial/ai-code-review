@@ -32,18 +32,19 @@ class SimpleMutex {
 }
 
 class BaseAIAgent {
-    constructor(apiKey, fileContentGetter, fileCommentator, model) {
+    constructor(apiKey, fileContentGetter, fileCommentator, model, reviewRulesContent) {
         this.apiKey = apiKey;
         this.fileContentGetter = fileContentGetter;
         this.fileCommentator = fileCommentator;
         this.model = model;
+        this.reviewRulesContent = reviewRulesContent;
         this.fileCache = new Map();
         this.cacheMutex = new SimpleMutex();
         this.MAX_CACHE_ENTRIES = constants.MAX_CACHE_ENTRIES;
     }
 
     getSystemPrompt() {
-        return `You are an expert code reviewer analyzing a GitHub pull request as part of an automated CI pipeline. You must work independently without human interaction. Review for logical errors, bugs, and security issues.
+        let prompt = `You are an expert code reviewer analyzing a GitHub pull request as part of an automated CI pipeline. You must work independently without human interaction. Review for logical errors, bugs, and security issues.
 
 Focus on:
 - Real bugs and logic errors (high priority)
@@ -77,6 +78,12 @@ When complete, call the mark_as_done tool with a brief summary of the review. Th
 Lines are 1-indexed. Do not comment on trivial issues or style preferences.
 Be concise but thorough in your review.
 => MODE NO-FALSE-POSITIVES IS ON.`;
+
+        if (this.reviewRulesContent) {
+            prompt += `\n\nAdditionally, adhere to the following custom review rules:\n${this.reviewRulesContent}`;
+        }
+
+        return prompt;
     }
 
     handleError(error, message, throwError = true) {
