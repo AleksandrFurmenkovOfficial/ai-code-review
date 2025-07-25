@@ -58,6 +58,8 @@ Perform code review using various AI models from OpenAI, Anthropic, Google, X, D
 
 ***fail_action_if_review_failed*** - Optional. If set to true, the action fails when the review process fails. Default is 'false'.
 
+***review_rules_file*** - Optional. Path to a file in the repository containing custom review rules to be added to the AI system prompt.
+
 ## Usage Examples
 
 Create a new `.github/workflows/ai-code-review.yml` file in your GitHub repository. Below are examples for different AI providers:

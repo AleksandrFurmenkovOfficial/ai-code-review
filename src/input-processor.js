@@ -86,6 +86,8 @@ class InputProcessor {
         this._filteredDiffs = [];
         this._fileContentGetter = null;
         this._fileCommentator = null;
+        this._reviewRulesFile = null;
+        this._reviewRulesContent = null;
     }
 
     /* ----------------------------- Public API ------------------------------ */
@@ -95,6 +97,7 @@ class InputProcessor {
         this._validateInputs();
         await this._setupGitHubAPI();
         await this._processChangedFiles();
+        await this._loadReviewRules(); // Load review rules after GitHub API is set up
         this._setupReviewTools();
         return this;
     }
@@ -115,6 +118,7 @@ class InputProcessor {
         this._excludeExtensions = sanitizeString(core.getInput("exclude_extensions"));
         this._includePaths = sanitizePath(core.getInput("include_paths"));
         this._excludePaths = sanitizePath(core.getInput("exclude_paths"));
+        this._reviewRulesFile = sanitizePath(core.getInput("review_rules_file"));
 
         if (!this._includeExtensions) {
             core.info("Using default: include all extensions");
@@ -127,6 +131,10 @@ class InputProcessor {
         }
         if (!this._excludePaths) {
             core.info("Using default: exclude no paths");
+        }
+
+        if (!this._reviewRulesFile) {
+            core.info("No custom review rules file specified.");
         }
     }
 
@@ -225,6 +233,25 @@ class InputProcessor {
         return changedFiles.filter(shouldReview);
     }
 
+    async _loadReviewRules() {
+        if (this._reviewRulesFile) {
+            core.info(`Attempting to load review rules from: ${this._reviewRulesFile}`);
+            try {
+                this._reviewRulesContent = await this._githubAPI.getContent(
+                    this._owner,
+                    this._repo,
+                    this._headCommit, // Use head commit to get the latest version of the rules file
+                    this._headCommit,
+                    this._reviewRulesFile
+                );
+                core.info("Successfully loaded review rules.");
+            } catch (error) {
+                core.warning(`Could not load review rules from ${this._reviewRulesFile}: ${error.message}`);
+                this._reviewRulesContent = null; // Ensure it's null if loading fails
+            }
+        }
+    }
+
     _setupReviewTools() {
         this._fileContentGetter = filePath =>
             this._githubAPI.getContent(this._owner, this._repo, this._baseCommit, this._headCommit, filePath);
@@ -248,17 +275,17 @@ class InputProcessor {
     getAIAgent() {
         switch (this._aiProvider) {
             case "openai":
-                return new OpenAIAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model);
+                return new OpenAIAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model, this._reviewRulesContent);
             case "anthropic":
-                return new AnthropicAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model);
+                return new AnthropicAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model, this._reviewRulesContent);
             case "google":
-                return new GoogleAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model);
+                return new GoogleAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model, this._reviewRulesContent);
             case "deepseek":
-                return new DeepseekAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model);
+                return new DeepseekAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model, this._reviewRulesContent);
             case "x":
-                return new XAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model);
+                return new XAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model, this._reviewRulesContent);
             case "perplexity":
-                return new PerplexityAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model);
+                return new PerplexityAgent(this._apiKey, this._fileContentGetter, this._fileCommentator, this._model, this._reviewRulesContent);
             default:
                 throw new Error(`Unsupported AI provider: ${this._aiProvider}`);
         }
