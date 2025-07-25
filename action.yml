@@ -25,7 +25,7 @@ inputs:
   anthropic_model:
     description: 'Anthropic model name (e.g., claude-sonnet-4-20250514 or claude-opus-4-20250514)'
     required: false
-    default: 'claude-sonnet-4-20250514'  
+    default: 'claude-sonnet-4-20250514'
   google_api_key:
     description: 'Google AI API key (required if using Google provider)'
     required: false
@@ -79,6 +79,9 @@ inputs:
     description: 'If set to true, the action fails when the review process fails'
     required: false
     default: 'false'
+  review_rules_file:
+    description: 'Path to a file containing custom review rules to be added to the AI system prompt.'
+    required: false
 
 runs:
   using: 'node20'
