@@ -3,7 +3,7 @@
 
 ## Description
 
-Perform code review using various AI models from OpenAI, Anthropic, Google, X or Deepseek to analyze and provide feedback on your code. This GitHub Action helps improve the code quality by automatically reviewing pull requests, focusing on specified file extensions, and excluding specific paths.
+Perform code review using various AI models from OpenAI, Anthropic, Google, X, Deepseek or Perplexity to analyze and provide feedback on your code. This GitHub Action helps improve the code quality by automatically reviewing pull requests, focusing on specified file extensions, and excluding specific paths.
 
 ## Inputs
 
@@ -43,6 +43,11 @@ Perform code review using various AI models from OpenAI, Anthropic, Google, X or
 ***x_model*** - Optional. The Deepseek model name (e.g., grok-3 or grok-4). Default is 'grok-3'.
 
 
+***perplexity_api_key*** - Required if using Perplexity provider. This key is necessary to access Perplexity's API for code review purposes.
+
+***perplexity_model*** - Optional. The Perplexity model name (e.g., sonar, sonar-pro, r1-1776, sonar-reasoning-pro). Default is 'sonar-reasoning-pro'.
+
+
 ***include_extensions*** - Optional. A comma-separated list of file extensions to include in the review (e.g., ".py,.js,.html"). If not specified, the action will consider all file types.
 
 ***exclude_extensions*** - Optional. A comma-separated list of file extensions to exclude from the review.
@@ -52,6 +57,8 @@ Perform code review using various AI models from OpenAI, Anthropic, Google, X or
 ***exclude_paths*** - Optional. A comma-separated list of directory paths to exclude from the review (e.g., "test/,docs/"). If not specified, the action will consider all paths.
 
 ***fail_action_if_review_failed*** - Optional. If set to true, the action fails when the review process fails. Default is 'false'.
+
+***review_rules_file*** - Optional. Path to a file in the repository containing custom review rules to be added to the AI system prompt.
 
 ## Usage Examples
 
@@ -185,6 +192,32 @@ jobs:
         ai_provider: 'x'
         x_api_key: ${{ secrets.X_API_KEY }}
         x_model: 'grok-3'
+```
+
+### Perplexity Example
+
+```yaml
+name: AI Code Review with Perplexity
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  ai_code_review:
+    runs-on: ubuntu-latest
+    steps:
+    - name: AI Code Review
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.9
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        owner: ${{ github.repository_owner }}
+        repo: ${{ github.event.repository.name }}
+        pr_number: ${{ github.event.number }}
+        
+        ai_provider: 'perplexity'
+        perplexity_api_key: ${{ secrets.PERPLEXITY_API_KEY }}
+        perplexity_model: 'sonar-reasoning-pro'
 ```
 
 ### Advanced Configuration Example

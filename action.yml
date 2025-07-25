@@ -25,7 +25,7 @@ inputs:
   anthropic_model:
     description: 'Anthropic model name (e.g., claude-sonnet-4-20250514 or claude-opus-4-20250514)'
     required: false
-    default: 'claude-sonnet-4-20250514'  
+    default: 'claude-sonnet-4-20250514'
   google_api_key:
     description: 'Google AI API key (required if using Google provider)'
     required: false
@@ -47,6 +47,13 @@ inputs:
     description: 'X model name (e.g., grok-3 or grok-4)'
     required: false
     default: 'grok-3'
+  perplexity_api_key:
+    description: 'Perplexity API key (required if using Perplexity provider)'
+    required: false
+  perplexity_model:
+    description: 'Perplexity model name (e.g., sonar, sonar-pro, r1-1776, sonar-reasoning-pro)'
+    required: false
+    default: 'sonar-reasoning-pro'
   owner:
     description: 'Repository owner'
     required: true
@@ -72,6 +79,9 @@ inputs:
     description: 'If set to true, the action fails when the review process fails'
     required: false
     default: 'false'
+  review_rules_file:
+    description: 'Path to a file containing custom review rules to be added to the AI system prompt.'
+    required: false
 
 runs:
   using: 'node20'
