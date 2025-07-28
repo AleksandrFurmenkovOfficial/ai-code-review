@@ -47,7 +47,7 @@
   "dependencies": {
     "@actions/core": "^1.11.1",
     "@actions/github": "^6.0.1",
-    "@anthropic-ai/sdk": "^0.55.0",
+    "@anthropic-ai/sdk": "^0.57.0",
     "@google/generative-ai": "^0.24.1",
     "he": "^1.2.0",
     "openai": "^5.10.1",
