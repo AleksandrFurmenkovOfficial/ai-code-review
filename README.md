@@ -78,7 +78,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: AI Code Review
-      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.9
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v1.0
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         owner: ${{ github.repository_owner }}
@@ -104,7 +104,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: AI Code Review
-      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.9
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v1.0
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         owner: ${{ github.repository_owner }}
@@ -130,7 +130,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: AI Code Review
-      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.9
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v1.0
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         owner: ${{ github.repository_owner }}
@@ -156,7 +156,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: AI Code Review
-      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.9
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v1.0
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         owner: ${{ github.repository_owner }}
@@ -182,7 +182,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: AI Code Review
-      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.9
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v1.0
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         owner: ${{ github.repository_owner }}
@@ -208,7 +208,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: AI Code Review
-      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.9
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v1.0
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         owner: ${{ github.repository_owner }}
@@ -234,7 +234,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: AI Code Review
-      uses: AleksandrFurmenkovOfficial/ai-code-review@v0.9
+      uses: AleksandrFurmenkovOfficial/ai-code-review@v1.0
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         owner: ${{ github.repository_owner }}
