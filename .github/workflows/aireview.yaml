@@ -28,15 +28,15 @@ jobs:
 
           # Anthropic Configuration (if using Anthropic)
           # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          # anthropic_model: 'claude-3-7-sonnet-20250219'  # Optional, defaults to 'claude-3-7-sonnet-latest'
+          # anthropic_model: 'claude-sonnet-4-5-20250929'  # Optional, defaults to 'claude-sonnet-4-5-20250929'
           
           # OpenAI Configuration (if using OpenAI)
           # openai_api_key: ${{ secrets.OPENAI_API_KEY }}
-          # openai_model: 'gpt-4o'  # Optional, defaults to 'gpt-4o'
+          # openai_model: 'gpt-5.2'  # Optional, defaults to 'gpt-5.2'
           
           # Google Configuration (if using Google)
           google_api_key: ${{ secrets.GOOGLE_API_KEY }}
-          google_model: 'gemini-2.5-pro' # Optional, defaults to 'gemini-2.0-flash'
+          google_model: 'gemini-3-pro-preview' # Optional, defaults to 'gemini-3-flash-preview'
           
           # Deepseek Configuration (if using Deepseek)
           deepseek_api_key: ${{ secrets.DEEPSEEK_API_KEY }}
@@ -44,7 +44,7 @@ jobs:
 
           # X Configuration (if using X)
           x_api_key: ${{ secrets.X_API_KEY }}
-          x_model: 'grok-3'  # Optional
+          x_model: 'grok-4'  # Optional
           
           # Optional file filters
           # include_extensions: '.js,.py,.ts'

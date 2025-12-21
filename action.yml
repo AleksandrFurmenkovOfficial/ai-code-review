@@ -16,23 +16,23 @@ inputs:
     description: 'OpenAI API key (required if using OpenAI provider)'
     required: false
   openai_model:
-    description: 'OpenAI model name (e.g., gpt-4.1 or o3)'
+    description: 'OpenAI model name (e.g., gpt-5.2 or o3)'
     required: false
-    default: 'gpt-4.1'
+    default: 'gpt-5.2'
   anthropic_api_key:
     description: 'Anthropic API key (required if using Anthropic provider)'
     required: false
   anthropic_model:
-    description: 'Anthropic model name (e.g., claude-sonnet-4-20250514 or claude-opus-4-20250514)'
+    description: 'Anthropic model name (e.g., claude-sonnet-4-5-20250929 or claude-opus-4-5-20251101)'
     required: false
-    default: 'claude-sonnet-4-20250514'
+    default: 'claude-sonnet-4-5-20250929'
   google_api_key:
     description: 'Google AI API key (required if using Google provider)'
     required: false
   google_model:
-    description: 'Google model name (e.g., gemini-2.5-flash or gemini-2.5-pro)'
+    description: 'Google model name (e.g., gemini-3-flash-preview or gemini-3-pro-preview)'
     required: false
-    default: 'gemini-2.5-flash'
+    default: 'gemini-3-flash-preview'
   deepseek_api_key:
     description: 'Deepseek API key (required if using Deepseek provider)'
     required: false
@@ -44,9 +44,9 @@ inputs:
     description: 'X API key (required if using X provider)'
     required: false
   x_model:
-    description: 'X model name (e.g., grok-3 or grok-4)'
+    description: 'X model name (e.g., grok-4 or grok-4-1-fast-reasoning-latest)'
     required: false
-    default: 'grok-3'
+    default: 'grok-4'
   perplexity_api_key:
     description: 'Perplexity API key (required if using Perplexity provider)'
     required: false

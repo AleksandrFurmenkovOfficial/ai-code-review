@@ -20,17 +20,17 @@ Perform code review using various AI models from OpenAI, Anthropic, Google, X, D
 
 ***openai_api_key*** - Required if using OpenAI provider. This key is necessary to access OpenAI's API for code review purposes.
 
-***openai_model*** - Optional. The OpenAI model name (e.g., gpt-4.1, gpt-4o or o3(super slow)). Default is 'gpt-4.1'.
+***openai_model*** - Optional. The OpenAI model name (e.g., gpt-5.2, gpt-4o or o3(super slow)). Default is 'gpt-5.2'.
 
 
 ***anthropic_api_key*** - Required if using Anthropic provider. This key is necessary to access Anthropic's API for code review purposes.
 
-***anthropic_model*** - Optional. The Anthropic model name (e.g., claude-sonnet-4-20250514 or claude-opus-4-20250514). Default is 'claude-sonnet-4-20250514'.
+***anthropic_model*** - Optional. The Anthropic model name (e.g., claude-sonnet-4-5-20250929 or claude-opus-4-5-20251101). Default is 'claude-sonnet-4-5-20250929'.
 
 
 ***google_api_key*** - Required if using Google provider. This key is necessary to access Google's API for code review purposes.
 
-***google_model*** - Optional. The Google model name (e.g., gemini-2.5-pro or gemini-2.5-flash). Default is 'gemini-2.5-flash'.
+***google_model*** - Optional. The Google model name (e.g., gemini-3-pro-preview or gemini-3-flash-preview). Default is 'gemini-3-flash-preview'.
 
 
 ***deepseek_api_key*** - Required if using Deepseek provider. This key is necessary to access Deepseek's API for code review purposes.
@@ -40,7 +40,7 @@ Perform code review using various AI models from OpenAI, Anthropic, Google, X, D
 
 ***x_api_key*** - Required if using X provider. This key is necessary to access X's API for code review purposes.
 
-***x_model*** - Optional. The Deepseek model name (e.g., grok-3 or grok-4). Default is 'grok-3'.
+***x_model*** - Optional. The Deepseek model name (e.g., grok-4 or grok-4-1-fast-reasoning-latest). Default is 'grok-4'.
 
 
 ***perplexity_api_key*** - Required if using Perplexity provider. This key is necessary to access Perplexity's API for code review purposes.
@@ -87,7 +87,7 @@ jobs:
         
         ai_provider: 'openai'
         openai_api_key: ${{ secrets.OPENAI_API_KEY }}
-        openai_model: 'gpt-4.1'
+        openai_model: 'gpt-5.2'
 ```
 
 ### Anthropic Example
@@ -113,7 +113,7 @@ jobs:
         
         ai_provider: 'anthropic'
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-        anthropic_model: 'claude-sonnet-4-20250514'
+        anthropic_model: 'claude-sonnet-4-5-20250929'
 ```
 
 ### Google Example
@@ -139,7 +139,7 @@ jobs:
         
         ai_provider: 'google'
         google_api_key: ${{ secrets.GOOGLE_API_KEY }}
-        google_model: 'gemini-2.5-flash'
+        google_model: 'gemini-3-flash-preview'
 ```
 
 ### Deepseek Example
@@ -191,7 +191,7 @@ jobs:
         
         ai_provider: 'x'
         x_api_key: ${{ secrets.X_API_KEY }}
-        x_model: 'grok-3'
+        x_model: 'grok-4'
 ```
 
 ### Perplexity Example
