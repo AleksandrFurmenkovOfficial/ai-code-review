@@ -47,15 +47,15 @@
   "dependencies": {
     "@actions/core": "^1.11.1",
     "@actions/github": "^6.0.1",
-    "@anthropic-ai/sdk": "^0.55.0",
+    "@anthropic-ai/sdk": "^0.67.0",
     "@google/generative-ai": "^0.24.1",
     "he": "^1.2.0",
-    "openai": "^5.10.1",
+    "openai": "^6.7.0",
     "shell-quote": "^1.8.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.38.0",
-    "eslint": "^9.31.0",
+    "eslint": "^9.38.0",
     "jest": "^30.0.5"
   }
 }
