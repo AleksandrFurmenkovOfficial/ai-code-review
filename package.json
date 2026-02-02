@@ -46,7 +46,7 @@
   "homepage": "https://github.com/AleksandrFurmenkovOfficial/ai-code-review#readme",
   "dependencies": {
     "@actions/core": "^2.0.2",
-    "@actions/github": "^7.0.0",
+    "@actions/github": "^9.0.0",
     "@anthropic-ai/sdk": "^0.71.2",
     "@google/generative-ai": "^0.24.1",
     "he": "^1.2.0",
