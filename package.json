@@ -50,7 +50,7 @@
     "@anthropic-ai/sdk": "^0.71.2",
     "@google/generative-ai": "^0.24.1",
     "he": "^1.2.0",
-    "openai": "^6.16.0",
+    "openai": "^6.17.0",
     "shell-quote": "^1.8.3"
   },
   "devDependencies": {
