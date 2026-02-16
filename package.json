@@ -54,7 +54,7 @@
     "shell-quote": "^1.8.3"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
+    "@eslint/js": "^10.0.1",
     "eslint": "^9.39.2",
     "jest": "^30.2.0"
   }
