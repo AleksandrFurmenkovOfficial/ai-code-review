@@ -84,6 +84,6 @@ inputs:
     required: false
 
 runs:
-  using: 'node20'
+  using: 'node24'
   pre: 'setup.js'
   main: 'src/index.js'
